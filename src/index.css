@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    /* White */
+    --foreground: 222 47% 11%;
+    /* Deep Charcoal */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 222 47% 11%;
+    /* Black/Charcoal for primary actions */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222 47% 11%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222 47% 11%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Optional: Keep dark variables here if we ever want to toggle back */
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+  }
+}
+
+@layer base {
+
+  /* Premium White Body */
+  body {
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
+    /* Soft Paper Gradient */
+    background-image: linear-gradient(to bottom, #ffffff, #f1f5f9);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-semibold tracking-tight text-slate-900;
+  }
+}
+
+/* 2026 Premium Utilities */
+
+.glass-elite {
+  /* Frosted Glass: White with heavy blur and soft shadow */
+  @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-xl;
+  box-shadow:
+    0 10px 40px -10px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.02);
+  /* Crisp border */
+}
+
+.glass-panel {
+  @apply bg-white/60 backdrop-blur-lg border border-white/40 shadow-lg rounded-xl;
+}
+
+.glass-card {
+  @apply bg-white/50 backdrop-blur-md border border-white/40 rounded-lg hover:border-black/5 hover:bg-white/80 transition-all duration-200;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+}
+
+.text-gradient {
+  /* Premium Dark Gradient */
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-slate-700 to-slate-900;
+}
+
+/* Custom Scrollbar - Minimalist */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
