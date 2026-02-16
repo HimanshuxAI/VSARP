@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Command as CommandIcon, Users } from 'lucide-react';
+import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Command as CommandIcon, Users, Target, BookOpen } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CommandPalette from '../components/CommandPalette';
 
@@ -20,11 +20,13 @@ export default function DashboardLayout() {
     const navItems = {
         student: [
             { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
+            { name: 'Career Navigator', href: '/student/career-navigator', icon: Target },
             { name: 'Submit Activity', href: '/student/submit', icon: FileText },
             { name: 'Resume Builder', href: '/student/resume', icon: FileText },
         ],
         faculty: [
             { name: 'Review Pending', href: '/faculty/review', icon: CheckSquare },
+            { name: 'Research Papers', href: '/faculty/publish-research', icon: BookOpen },
         ],
         admin: [
             { name: 'Overview', href: '/admin/overview', icon: LayoutDashboard },

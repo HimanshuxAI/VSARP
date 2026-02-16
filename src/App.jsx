@@ -14,6 +14,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import StudentDashboard from './pages/student/Dashboard';
 import SubmitActivity from './pages/student/SubmitActivity';
 import FacultyReview from './pages/faculty/Review';
+import PublishResearch from './pages/faculty/PublishResearch';
 import AdminOverview from './pages/admin/Overview';
 import UserApprovals from './pages/admin/UserApprovals';
 import VerificationPage from './pages/public/VerificationPage';
@@ -23,6 +24,8 @@ import AuditLogs from './pages/admin/AuditLogs';
 import Configuration from './pages/admin/Configuration';
 import Profile from './pages/common/Profile';
 
+import CareerNavigator from './pages/student/CareerNavigator';
+import CareerGoalDefinition from './pages/student/CareerGoalDefinition';
 import ResumeBuilder from './pages/student/ResumeBuilder';
 
 // Transition Variants
@@ -80,6 +83,16 @@ function AnimatedRoutes() {
                 <StudentDashboard />
               </motion.div>
             } />
+            <Route path="career-navigator" element={
+              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
+                <CareerNavigator />
+              </motion.div>
+            } />
+            <Route path="career-goals" element={
+              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
+                <CareerGoalDefinition />
+              </motion.div>
+            } />
             <Route path="submit" element={
               <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
                 <SubmitActivity />
@@ -96,6 +109,11 @@ function AnimatedRoutes() {
             <Route path="review" element={
               <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
                 <FacultyReview />
+              </motion.div>
+            } />
+            <Route path="publish-research" element={
+              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
+                <PublishResearch />
               </motion.div>
             } />
           </Route>

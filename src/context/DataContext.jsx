@@ -11,6 +11,8 @@ export const DataProvider = ({ children }) => {
     const [auditLog, setAuditLog] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const [researchPapers, setResearchPapers] = useState([]);
+
     const isMockMode = supabase.supabaseKey.startsWith('sb_publishable_');
 
     useEffect(() => {
@@ -18,6 +20,7 @@ export const DataProvider = ({ children }) => {
             fetchData();
         } else {
             setActivities([]);
+            setResearchPapers([]);
             setAuditLog([]);
         }
     }, [user]);
@@ -28,8 +31,10 @@ export const DataProvider = ({ children }) => {
         if (isMockMode) {
             // MOCK FETCH
             const localActivities = JSON.parse(localStorage.getItem('vsarp_activities') || '[]');
+            const localPapers = JSON.parse(localStorage.getItem('vsarp_research_papers') || '[]');
             const localLogs = JSON.parse(localStorage.getItem('vsarp_logs') || '[]');
             setActivities(localActivities);
+            setResearchPapers(localPapers);
             setAuditLog(localLogs);
             setLoading(false);
             return;
@@ -47,6 +52,14 @@ export const DataProvider = ({ children }) => {
             .order('submitted_at', { ascending: false });
 
         if (actData) setActivities(actData);
+
+        // Fetch Research Papers
+        const { data: paperData } = await supabase
+            .from('research_papers')
+            .select('*')
+            .order('publication_date', { ascending: false });
+
+        if (paperData) setResearchPapers(paperData);
 
         // Fetch Logs (if Admin)
         if (user?.role === 'admin') {
@@ -108,6 +121,40 @@ export const DataProvider = ({ children }) => {
         setActivities([data, ...activities]);
         // Log action only if success
         await logAction(user.id, user.role, 'SUBMISSION', data.id, `Submitted: ${activity.title}`);
+        return true;
+    };
+
+    const addResearchPaper = async (paper) => {
+        const newPaper = {
+            id: isMockMode ? crypto.randomUUID() : undefined,
+            faculty_id: user.id,
+            faculty_name: user.name,
+            title: paper.title,
+            abstract: paper.abstract,
+            publication_date: paper.publication_date,
+            journal_conference: paper.journal_conference,
+            url: paper.url,
+            created_at: new Date().toISOString()
+        };
+
+        if (isMockMode) {
+            const updated = [newPaper, ...researchPapers];
+            setResearchPapers(updated);
+            localStorage.setItem('vsarp_research_papers', JSON.stringify(updated));
+            logAction(user.id, user.role, 'PUBLISH', newPaper.id, `Published Paper: ${paper.title}`);
+            return true;
+        }
+
+        const { data, error } = await supabase.from('research_papers').insert(newPaper).select().single();
+
+        if (error) {
+            console.error("Supabase Insert Error:", error);
+            alert(`Publication Failed: ${error.message}`);
+            return false;
+        }
+
+        setResearchPapers([data, ...researchPapers]);
+        await logAction(user.id, user.role, 'PUBLISH', data.id, `Published Paper: ${paper.title}`);
         return true;
     };
 
@@ -255,15 +302,66 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const fillRandomResearchPapers = async () => {
+        if (!user) return alert("Please login as faculty first");
+
+        if (!window.confirm("This will add 3 random research papers. Continue?")) {
+            return;
+        }
+
+        const topics = [
+            "AI in Healthcare", "Blockchain for Supply Chain", "Quantum Computing Algorithms",
+            "Sustainable Urban Planning", "IoT Security Protocols", "Machine Learning in Finance"
+        ];
+        const journals = [
+            "IEEE Access", "Nature Machine Intelligence", "Springer AI Review",
+            "ACM Transactions", "Elsevier Journal of Systems"
+        ];
+
+        const batch = Array.from({ length: 3 }).map(() => ({
+            faculty_id: user.id,
+            faculty_name: user.name,
+            title: topics[Math.floor(Math.random() * topics.length)] + ": A Comprehensive Study",
+            abstract: "This paper explores the latest advancements in the field, proposing a novel framework for optimization and scalability.",
+            publication_date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString().split('T')[0],
+            journal_conference: journals[Math.floor(Math.random() * journals.length)],
+            url: "https://doi.org/10.1109/ACCESS.2024.1234567",
+            created_at: new Date().toISOString()
+        }));
+
+        if (isMockMode) {
+            const mockBatch = batch.map(b => ({ ...b, id: crypto.randomUUID() }));
+            const current = JSON.parse(localStorage.getItem('vsarp_research_papers') || '[]');
+            const updated = [...mockBatch, ...current];
+            localStorage.setItem('vsarp_research_papers', JSON.stringify(updated));
+            setResearchPapers(updated);
+            alert("Added 3 random research papers!");
+            return;
+        }
+
+        const { data, error } = await supabase.from('research_papers').insert(batch).select();
+
+        if (error) {
+            console.error(error);
+            alert("Failed to insert random papers: " + error.message);
+        } else {
+            setResearchPapers(prev => [...data, ...prev]);
+            alert("Added 3 random research papers!");
+        }
+    };
+
     return (
         <DataContext.Provider value={{
             activities,
+            researchPapers,
             categories,
             auditLog,
             addActivity,
+            addResearchPaper,
             updateStatus,
             addCategory,
             fillRandomData,
+            fillRandomResearchPapers,
             loading
         }}>
             {children}
