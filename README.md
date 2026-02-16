@@ -1,16 +1,142 @@
-# React + Vite
+# VSARP - AI Career Navigator & Student Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![VSARP Banner](/public/vite.svg) *Note: Add a project banner here*
 
-Currently, two official plugins are available:
+VSARP (Virtual Student Academic Resource Portal) is a comprehensive, AI-powered platform designed to guide students through their higher education journey. It bridges the gap between academic achievements and career readiness by providing tools for goal setting, skill gap analysis, and portfolio management.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🚀 Key Features
 
-## React Compiler
+### 🎓 Student Portal
+- **Career Navigator**: AI-driven career path recommendations based on student interests.
+- **Goal Definition Wizard**: Interactive assessment to identify and set concrete career goals.
+- **Skill Gap Analysis**: Visualizes the difference between current skills and industry requirements (Mock Implementation).
+- **Portfolio Management**: Submit and track co-curricular activities (hackathons, papers, sports).
+- **Resume Builder**: (Coming Soon) Auto-generate resumes based on portfolio data.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🏫 Faculty Dashboard
+- **Activity Review**: Approve or reject student activity submissions.
+- **Research Publications**: Manage and publish academic research papers.
+- **Student Progress Monitoring**: View aggregate data on student readiness.
 
-## Expanding the ESLint configuration
+### 🛡️ Admin & Security
+- **Role-Based Access Control (RBAC)**: Secure access for Students, Faculty, and Admins.
+- **Audit Logging**: Comprehensive logs of all critical actions (submissions, approvals, config changes).
+- **Configuration**: Manage system categories and settings.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+---
+
+## 🛠️ Technology Stack
+
+- **Frontend**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Radix UI](https://www.radix-ui.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Routing**: [React Router DOM](https://reactrouter.com/)
+- **Backend (Simulation)**: Uses `localStorage` for a zero-config "Mock Mode" during development.
+- **Database (Ready)**: [Supabase](https://supabase.com/) SQL migrations included for production.
+
+---
+
+## ⚡ Quick Start
+
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+
+### Installation
+
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/HimanshuxAI/VSARP.git
+    cd VSARP
+    ```
+
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
+
+3.  **Run the Development Server**
+    ```bash
+    npm run dev
+    ```
+    The app will open at `http://localhost:5173`.
+
+### 🧪 Mock Mode (Default)
+The application currently runs in **Mock Mode**. This means it does **not** require a connection to Supabase to function.
+- All data (users, activities, careers) is stored in your browser's `localStorage`.
+- You can essentially use the full app offline.
+- **To Reset Data**: Clear your browser's local storage for `localhost:5173`.
+
+### 🔑 Default Login Credentials
+Use these credentials to test different roles:
+
+**Student**
+- Email: `student@test.com`
+- Password: `password123`
+
+**Faculty**
+- Email: `faculty@test.com`
+- Password: `password123`
+
+**Admin**
+- Email: `admin@test.com`
+- Password: `password123`
+
+---
+
+## 📂 Project Structure
+
+```bash
+VSARP/
+├── public/              # Static assets
+├── src/
+│   ├── components/      # Reusable UI components (Buttons, Cards, etc.)
+│   ├── context/         # Global State (AuthContext, DataContext)
+│   ├── layouts/         # Page layouts (Dashboard, Public)
+│   ├── lib/             # Utilities and API services (mock/real)
+│   ├── pages/
+│   │   ├── auth/        # Login & Register
+│   │   ├── student/     # Student-specific pages (Dashboard, Career)
+│   │   ├── faculty/     # Faculty pages (Review, Research)
+│   │   └── admin/       # Admin pages
+│   ├── App.jsx          # Main Routing Logic
+│   └── main.jsx         # Entry Point
+├── supabase/            # Database Migrations (SQL)
+└── README.md            # Project Documentation
+```
+
+---
+
+## 🗄️ Database Schema
+
+When you are ready to connect to a real backend, applying the provided SQL migrations will create the following structure:
+
+- `users`: Core user profiles (linked to Auth).
+- `activities`: Student submissions with status workflow.
+- `career_paths`: detailed career options and salaries.
+- `skills`: Skill repository for tagging.
+- `student_profiles`: Extended profile data for career matching.
+- `career_goals`: Links students to their target careers.
+- `research_papers`: Faculty publications.
+
+To apply migrations:
+1.  Set up a Supabase project.
+2.  Copy keys to `.env` (see `.env.example`).
+3.  Run the SQL scripts in `supabase/migrations/` via the Supabase Dashboard SQL Editor.
+
+---
+
+## 🤝 Contributing
+
+1.  Fork the repository.
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your changes.
+4.  Push to the branch.
+5.  Open a Pull Request.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
