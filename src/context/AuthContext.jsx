@@ -22,18 +22,7 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem(FAKE_SESSION_KEY);
             }
         }
-        // DEFAULT AUTO-LOGIN (DEV MODE)
-        const devUser = {
-            id: crypto.randomUUID(), // Generates a valid UUID v4
-            email: 'dev@student.edu',
-            role: 'student',
-            name: 'Dev Student',
-            student_id: 'DEV-001',
-            department: 'Computer Science'
-        };
-        // Persist the new valid dev user immediately so next refresh uses it
-        localStorage.setItem(FAKE_SESSION_KEY, JSON.stringify(devUser));
-        return devUser;
+        return null;
     });
 
     // Loading is effectively instant with local storage sync, but keeping state API consistent
