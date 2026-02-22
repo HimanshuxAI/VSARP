@@ -15,6 +15,10 @@ export default function SubmitActivity() {
     const [formData, setFormData] = useState({
         title: '',
         category: '',
+        outcome_type: '',
+        skill_tag: '',
+        academic_year: '',
+        semester: '',
         date: '',
         description: '',
         proof: null,
@@ -90,32 +94,36 @@ export default function SubmitActivity() {
         const mockTitles = [
             "Hackathon Winner - CodeFest 2025",
             "IEEE Research Paper Presentation",
-            "University Debate Championship Finalist",
-            "NSS Community Clean-up Drive Lead",
-            "Robotics Workshop Coordinator"
+            "Industry Internship – Infosys",
+            "AWS Certified Developer",
+            "Soft Skills Communication Workshop"
         ];
         const mockDescs = [
             "Led a team of four to build a decentralized voting app using Solidity and React. Won 1st place in the blockchain track.",
-            " presented a paper on 'AI in Healthcare' at the international conference. Received 'Best Presenter' award.",
-            "Participated in the national level debate, reaching the finals. Topic was 'Ethics of Artificial Intelligence'.",
-            "Organized a weekend clean-up drive involving 50+ students. Collected and recycled 200kg of waste.",
-            "Coordinated a 2-day workshop on Arduino and basic robotics for 100+ junior students."
+            "Presented a paper on 'AI in Healthcare' at the international conference. Received 'Best Presenter' award.",
+            "Completed a 2-month internship at Infosys, working on microservices architecture and cloud deployment.",
+            "Passed AWS Developer Associate exam with a score of 890/1000.",
+            "Attended a 3-day workshop on interpersonal communication, public speaking, and conflict resolution."
         ];
-        const cats = ['Academic', 'Sports', 'Cultural', 'Social Service', 'Leadership'];
+        const cats = ['Hackathon', 'Research Paper', 'Internship', 'Certification', 'Soft Skills Test'];
+        const outcomeTypes = ['Technical', 'Research', 'Leadership', 'Sports'];
+        const skillTags = ['Python', 'Communication', 'Cloud', 'ML', 'Networking', 'Web Dev'];
+        const years = ['2023-24', '2024-25'];
+        const semesters = ['3', '4', '5', '6'];
 
         const randomCat = cats[Math.floor(Math.random() * cats.length)];
-        let title = mockTitles[Math.floor(Math.random() * mockTitles.length)];
-
-        // Align title with category slightly for realism (optional, but nice)
-        if (randomCat === 'Sports') title = "Inter-College Cricket Tournament Captain";
-        if (randomCat === 'Cultural') title = "Annual Fest Dance Performance";
+        const title = mockTitles[cats.indexOf(randomCat)];
 
         setFormData({
             title: title,
             category: randomCat,
+            outcome_type: outcomeTypes[Math.floor(Math.random() * outcomeTypes.length)],
+            skill_tag: skillTags[Math.floor(Math.random() * skillTags.length)],
+            academic_year: years[Math.floor(Math.random() * years.length)],
+            semester: semesters[Math.floor(Math.random() * semesters.length)],
             date: new Date().toISOString().split('T')[0],
-            description: mockDescs[Math.floor(Math.random() * mockDescs.length)],
-            proof: 'https://example.com/mock-certificate.pdf', // Mock URL
+            description: mockDescs[cats.indexOf(randomCat)],
+            proof: 'https://example.com/mock-certificate.pdf',
             proofName: `certificate_${Date.now()}.pdf`
         });
 
@@ -155,9 +163,13 @@ export default function SubmitActivity() {
                 student_name: user.name,
                 title: formData.title,
                 category: formData.category,
+                outcome_type: formData.outcome_type,
+                skill_tag: formData.skill_tag,
+                academic_year: formData.academic_year,
+                semester: formData.semester,
                 date: formData.date,
                 description: formData.description,
-                proof_url: formData.proof // In real app, this would be the S3 URL
+                proof_url: formData.proof
             });
 
             if (success) {
@@ -255,9 +267,8 @@ export default function SubmitActivity() {
                                 )}
                             >
                                 <option value="" disabled>Select Category</option>
-                                {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                                {['Internship', 'Research Paper', 'Certification', 'Hackathon', 'Soft Skills Test', 'Sports', 'Leadership', 'Cultural', 'Social Service'].map(cat => <option key={cat} value={cat}>{cat}</option>)}
                             </select>
-                            {/* Custom Arrow */}
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
                                 <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
                             </div>
@@ -281,6 +292,75 @@ export default function SubmitActivity() {
                             max={new Date().toISOString().split('T')[0]}
                             className="h-11"
                         />
+                    </div>
+                </div>
+
+                {/* Outcome Type & Skill Tag */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-900">Outcome Type</label>
+                        <div className="relative">
+                            <select
+                                name="outcome_type"
+                                value={formData.outcome_type}
+                                onChange={handleChange}
+                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
+                            >
+                                <option value="">Select Outcome Type</option>
+                                {['Technical', 'Research', 'Leadership', 'Sports'].map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-900">Skill Tag</label>
+                        <Input
+                            name="skill_tag"
+                            value={formData.skill_tag}
+                            onChange={handleChange}
+                            placeholder="e.g. Python, Cloud, Leadership"
+                            className="h-11"
+                        />
+                    </div>
+                </div>
+
+                {/* Academic Year & Semester */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-900">Academic Year</label>
+                        <div className="relative">
+                            <select
+                                name="academic_year"
+                                value={formData.academic_year}
+                                onChange={handleChange}
+                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
+                            >
+                                <option value="">Select Year</option>
+                                {['2021-22', '2022-23', '2023-24', '2024-25', '2025-26'].map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-900">Semester</label>
+                        <div className="relative">
+                            <select
+                                name="semester"
+                                value={formData.semester}
+                                onChange={handleChange}
+                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
+                            >
+                                <option value="">Select Semester</option>
+                                {['1', '2', '3', '4', '5', '6', '7', '8'].map(s => <option key={s} value={s}>Sem {s}</option>)}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                                <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" /></svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -108,3 +108,36 @@ CREATE POLICY "Users can manage own goals" ON student_goals FOR ALL USING (auth.
 
 CREATE POLICY "Users can view own skills" ON student_skills FOR SELECT USING (auth.uid() = student_id);
 CREATE POLICY "Users can manage own skills" ON student_skills FOR ALL USING (auth.uid() = student_id);
+
+-- ============================================================
+-- VSARP Phase 2 – Enriched Activity Data Model (2025-02-22)
+-- ============================================================
+ALTER TABLE IF EXISTS activities
+    ADD COLUMN IF NOT EXISTS outcome_type TEXT CHECK (outcome_type IN ('Technical', 'Research', 'Leadership', 'Sports')),
+    ADD COLUMN IF NOT EXISTS skill_tag TEXT,
+    ADD COLUMN IF NOT EXISTS academic_year TEXT,
+    ADD COLUMN IF NOT EXISTS semester TEXT,
+    ADD COLUMN IF NOT EXISTS department TEXT;
+
+-- Employability Score View
+-- Weights: Internship=15, Research Paper=12, Certification=10,
+--          Soft Skills Test=10, Hackathon=8, other=5
+CREATE OR REPLACE VIEW student_employability_scores AS
+SELECT
+    student_id,
+    student_name,
+    department,
+    LEAST(
+        SUM(CASE
+            WHEN category = 'Internship'       THEN 15
+            WHEN category = 'Research Paper'   THEN 12
+            WHEN category = 'Certification'    THEN 10
+            WHEN category = 'Soft Skills Test' THEN 10
+            WHEN category = 'Hackathon'        THEN 8
+            ELSE 5
+        END), 100
+    ) AS employability_score,
+    COUNT(*) FILTER (WHERE status = 'approved') AS approved_count
+FROM activities
+WHERE status = 'approved'
+GROUP BY student_id, student_name, department;

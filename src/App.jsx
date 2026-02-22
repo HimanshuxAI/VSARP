@@ -27,6 +27,9 @@ import Profile from './pages/common/Profile';
 import CareerNavigator from './pages/student/CareerNavigator';
 import CareerGoalDefinition from './pages/student/CareerGoalDefinition';
 import ResumeBuilder from './pages/student/ResumeBuilder';
+import Portfolio from './pages/public/Portfolio';
+import PlacementDashboard from './pages/admin/PlacementDashboard';
+import StudentFilter from './pages/admin/StudentFilter';
 
 // Transition Variants
 const pageVariants = {
@@ -65,6 +68,7 @@ function AnimatedRoutes() {
             </motion.div>
           } />
           <Route path="/seed" element={<SeedPage />} />
+          <Route path="/portfolio/:studentId" element={<Portfolio />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Route>
 
@@ -142,6 +146,16 @@ function AnimatedRoutes() {
             <Route path="settings" element={
               <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
                 <Configuration />
+              </motion.div>
+            } />
+            <Route path="placement" element={
+              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
+                <PlacementDashboard />
+              </motion.div>
+            } />
+            <Route path="shortlist" element={
+              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
+                <StudentFilter />
               </motion.div>
             } />
           </Route>

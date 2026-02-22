@@ -90,8 +90,13 @@ export const DataProvider = ({ children }) => {
             student_id: user.id, // Enforce Auth ownership
             student_name: user.name,
             student_reg_no: user.student_id,
+            department: user.department || activity.department || 'General',
             title: activity.title,
             category: activity.category,
+            outcome_type: activity.outcome_type || 'Technical',
+            skill_tag: activity.skill_tag || '',
+            academic_year: activity.academic_year || '2024-25',
+            semester: activity.semester || '1',
             description: activity.description,
             date: activity.date,
             proof_url: activity.proof_url,
@@ -240,6 +245,10 @@ export const DataProvider = ({ children }) => {
         await supabase.from('audit_logs').insert(newLog);
     };
 
+    const getAllUsers = () => {
+        return JSON.parse(localStorage.getItem('vsarp_users') || '[]');
+    };
+
     const fillRandomData = async () => {
         if (!user) return alert("Please login first");
 
@@ -254,7 +263,10 @@ export const DataProvider = ({ children }) => {
             "NGO Volunteer Lead",
             "National Debate Prize",
             "Robotics Club Secretary",
-            "Coding Contest Finalist"
+            "Coding Contest Finalist",
+            "Industry Internship - Infosys",
+            "AWS Cloud Certification",
+            "Soft Skills Workshop"
         ];
         const descriptions = [
             "Led a team of 4 to build an AI-powered healthcare app, securing 1st place among 50 teams.",
@@ -264,14 +276,23 @@ export const DataProvider = ({ children }) => {
             "Secured 2nd runner-up in the National Level Debate competition on 'AI Ethics'.",
             "Managed logistics and workshop coordination for the annual Robotics Symposium."
         ];
-        const cats = ['Academic', 'Sports', 'Cultural', 'Social Service', 'Leadership'];
+        const cats = ['Hackathon', 'Research Paper', 'Sports', 'Internship', 'Certification', 'Soft Skills Test', 'Leadership'];
+        const outcomeTypes = ['Technical', 'Research', 'Leadership', 'Sports'];
+        const skillTags = ['Python', 'Leadership', 'Communication', 'Cloud', 'ML', 'Web Dev', 'Data Analysis'];
+        const years = ['2023-24', '2024-25'];
+        const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
 
         const batch = Array.from({ length: 5 }).map(() => ({
             student_id: user.id,
             student_name: user.name,
             student_reg_no: user.student_id,
+            department: user.department || 'Computer Science',
             title: titles[Math.floor(Math.random() * titles.length)],
             category: cats[Math.floor(Math.random() * cats.length)],
+            outcome_type: outcomeTypes[Math.floor(Math.random() * outcomeTypes.length)],
+            skill_tag: skillTags[Math.floor(Math.random() * skillTags.length)],
+            academic_year: years[Math.floor(Math.random() * years.length)],
+            semester: semesters[Math.floor(Math.random() * semesters.length)],
             description: descriptions[Math.floor(Math.random() * descriptions.length)],
             date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString(),
             proof_url: 'https://example.com/certificate.pdf',
@@ -362,6 +383,7 @@ export const DataProvider = ({ children }) => {
             addCategory,
             fillRandomData,
             fillRandomResearchPapers,
+            getAllUsers,
             loading
         }}>
             {children}

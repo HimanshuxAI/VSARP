@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Command as CommandIcon, Users, Target, BookOpen } from 'lucide-react';
+import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Command as CommandIcon, Users, Target, BookOpen, Briefcase, UserCheck } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CommandPalette from '../components/CommandPalette';
 
@@ -32,6 +32,8 @@ export default function DashboardLayout() {
             { name: 'Overview', href: '/admin/overview', icon: LayoutDashboard },
             { name: 'User Approvals', href: '/admin/approvals', icon: Users },
             { name: 'Reports', href: '/admin/reports', icon: BarChart3 },
+            { name: 'Placement Dashboard', href: '/admin/placement', icon: Briefcase },
+            { name: 'Student Shortlist', href: '/admin/shortlist', icon: UserCheck },
             { name: 'Audit Logs', href: '/admin/audit', icon: ShieldCheck },
             { name: 'Settings', href: '/admin/settings', icon: FileText },
         ]

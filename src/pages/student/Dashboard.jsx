@@ -4,8 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
-import { Download, Bell, Award, Briefcase, ChevronRight, CheckCircle, XCircle, Clock, Database, Sparkles, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Download, Bell, Award, Briefcase, ChevronRight, CheckCircle, XCircle, Clock, Database, Sparkles, FileText, AlertCircle, CheckCircle2, Share2, TrendingUp } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+import { computeEmployabilityScore } from '../../lib/employabilityScore';
 
 export default function StudentDashboard() {
     const { activities, loading, fillRandomData } = useData();
@@ -25,6 +26,20 @@ export default function StudentDashboard() {
     // Filter Data
     const myActivities = activities.filter(a => a.student_id === user.id);
     const approved = myActivities.filter(a => a.status === 'approved').length;
+
+    // Employability Score
+    const { score, breakdown, level, levelColor } = computeEmployabilityScore(myActivities);
+    const scorePercent = Math.min(score, 100);
+    const arcColor = score >= 80 ? '#7c3aed' : score >= 60 ? '#16a34a' : score >= 40 ? '#ca8a04' : score > 0 ? '#ea580c' : '#9ca3af';
+
+    const handleSharePortfolio = () => {
+        const url = `${window.location.origin}/portfolio/${user.id}`;
+        navigator.clipboard.writeText(url).then(() => {
+            alert(`Portfolio link copied!\n\n${url}`);
+        }).catch(() => {
+            prompt('Copy this link:', url);
+        });
+    };
 
     // "Career Impact" Mock Logic
     const skillsEarned = [
@@ -54,7 +69,7 @@ export default function StudentDashboard() {
                     <h2 className="text-4xl font-bold tracking-tight text-slate-900 drop-shadow-sm">Student Portfolio</h2>
                     <p className="text-slate-500 mt-2 font-medium">Manage your co-curricular record and career milestones.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 flex-wrap">
                     <Button variant="ghost" className="h-10 text-gray-400 hover:text-white" onClick={() => alert('No new notifications')}>
                         <Bell className="w-4 h-4 mr-2" />
                         Alerts
@@ -62,6 +77,14 @@ export default function StudentDashboard() {
                     <Button variant="outline" className="h-10" onClick={fillRandomData}>
                         <Database className="w-4 h-4 mr-2" />
                         Fill Random Data
+                    </Button>
+                    <Button
+                        onClick={handleSharePortfolio}
+                        variant="outline"
+                        className="h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share Portfolio
                     </Button>
                     <Button
                         onClick={handleExportTranscript}
@@ -76,6 +99,57 @@ export default function StudentDashboard() {
                             </>
                         )}
                     </Button>
+                </div>
+            </div>
+
+            {/* Employability Score Card */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Score Gauge */}
+                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center justify-center">
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-3">Employability Score</p>
+                    <div className="relative w-32 h-32">
+                        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="10" />
+                            <circle
+                                cx="50" cy="50" r="40" fill="none"
+                                stroke={arcColor} strokeWidth="10"
+                                strokeDasharray={`${2 * Math.PI * 40}`}
+                                strokeDashoffset={`${2 * Math.PI * 40 * (1 - scorePercent / 100)}`}
+                                strokeLinecap="round"
+                            />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-3xl font-bold text-slate-900">{score}</span>
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">/ 100</span>
+                        </div>
+                    </div>
+                    <p className={`mt-2 text-sm font-bold ${levelColor}`}>{level} Level</p>
+                </div>
+
+                {/* Score Breakdown */}
+                <div className="md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+                    <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-blue-500" />
+                        Score Breakdown (Approved Only)
+                    </h3>
+                    {breakdown.length === 0 ? (
+                        <p className="text-slate-400 text-sm">No approved activities yet. Submit and get approvals to earn points!</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {breakdown.map(item => (
+                                <div key={item.category} className="flex items-center gap-3">
+                                    <span className="w-36 text-sm text-slate-600 font-medium truncate">{item.category}</span>
+                                    <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+                                        <div
+                                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
+                                            style={{ width: `${Math.min((item.points / 100) * 100, 100)}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-xs font-mono font-bold text-slate-700 w-16 text-right">×{item.count} = +{item.points}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
