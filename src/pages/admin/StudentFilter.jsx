@@ -92,16 +92,16 @@ export default function StudentFilter() {
     return (
         <div className="space-y-6 animate-enter pb-10">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div className="flex flex-col gap-4">
                 <div>
-                    <h2 className="text-4xl font-bold tracking-tight text-slate-900">Student Shortlist</h2>
-                    <p className="text-slate-500 mt-2 font-medium">Filter and shortlist students for placement offers.</p>
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">Student Shortlist</h2>
+                    <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base font-medium">Filter and shortlist students for placement offers.</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     {selected.size > 0 && (
                         <Button
                             onClick={() => downloadCSV(selectedStudents, 'vsarp_shortlist.csv')}
-                            className="bg-slate-900 text-white hover:bg-slate-800 shadow-lg flex items-center gap-2"
+                            className="bg-slate-900 text-white hover:bg-slate-800 shadow-lg flex items-center gap-2 text-xs sm:text-sm"
                         >
                             <Download className="w-4 h-4" />
                             Export Shortlist ({selected.size})
@@ -110,7 +110,7 @@ export default function StudentFilter() {
                     <Button
                         onClick={() => downloadCSV(filtered, 'vsarp_filtered_students.csv')}
                         variant="outline"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 text-xs sm:text-sm"
                     >
                         <Download className="w-4 h-4" />
                         Export All ({filtered.length})
@@ -119,7 +119,7 @@ export default function StudentFilter() {
             </div>
 
             {/* Filter Bar */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5">
                 <div className="flex items-center gap-2 mb-4">
                     <Filter className="w-4 h-4 text-slate-500" />
                     <h3 className="font-semibold text-slate-800 text-sm">Filters</h3>
@@ -184,7 +184,7 @@ export default function StudentFilter() {
 
             {/* Students Table */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between">
+                <div className="px-4 sm:px-6 py-3 border-b border-slate-100 flex items-center justify-between">
                     <span className="text-sm text-slate-500 font-medium">{filtered.length} student{filtered.length !== 1 ? 's' : ''} found</span>
                     {filtered.length > 0 && (
                         <button onClick={toggleAll} className="text-xs text-blue-600 hover:underline font-semibold">
@@ -198,8 +198,9 @@ export default function StudentFilter() {
                         <p>No students match the current filters.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
+                    <div className="overflow-x-auto -mx-px">
+                        {/* Desktop table */}
+                        <table className="min-w-full text-sm hidden sm:table">
                             <thead className="bg-slate-50 text-xs text-slate-500 uppercase font-semibold">
                                 <tr>
                                     <th className="w-10 px-4 py-3"></th>
@@ -250,6 +251,40 @@ export default function StudentFilter() {
                                 ))}
                             </tbody>
                         </table>
+                        {/* Mobile card list */}
+                        <div className="sm:hidden divide-y divide-slate-100">
+                            {filtered.map(s => (
+                                <div
+                                    key={s.id}
+                                    onClick={() => toggleSelect(s.id)}
+                                    className={`p-4 flex items-start gap-3 cursor-pointer transition-colors ${selected.has(s.id) ? 'bg-blue-50/60' : 'hover:bg-slate-50'}`}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        checked={selected.has(s.id)}
+                                        onChange={() => toggleSelect(s.id)}
+                                        onClick={e => e.stopPropagation()}
+                                        className="accent-slate-900 w-4 h-4 mt-1 flex-shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="font-semibold text-slate-900 text-sm truncate">{s.full_name || s.name || 'Student'}</p>
+                                            <span className={`inline-flex items-center justify-center w-10 h-6 rounded-full text-xs font-bold flex-shrink-0 ${SCORE_COLOR(s.score)}`}>
+                                                {s.score}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-slate-500 mt-0.5">{s.department || '—'} · {s.approvedCount} approved · <span className={`font-bold ${s.levelColor}`}>{s.level}</span></p>
+                                        {s.outcomeTypes.length > 0 && (
+                                            <div className="flex flex-wrap gap-1 mt-1.5">
+                                                {s.outcomeTypes.map(t => (
+                                                    <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">{t}</span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>

@@ -41,16 +41,16 @@ export default function Portfolio() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 font-sans">
             {/* Top banner */}
-            <div className="bg-slate-900 text-white py-3 px-6 flex items-center justify-center gap-2 text-sm">
-                <Globe className="w-4 h-4 text-blue-400" />
+            <div className="bg-slate-900 text-white py-3 px-4 sm:px-6 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                <Globe className="w-4 h-4 text-blue-400 flex-shrink-0" />
                 <span className="text-slate-400">Public Portfolio —</span>
-                <span className="font-semibold">VSARP Verified Activity Record Platform</span>
+                <span className="font-semibold truncate">VSARP Verified Activity Record Platform</span>
             </div>
 
-            <div className="max-w-3xl mx-auto px-4 py-12 space-y-8">
+            <div className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-12 space-y-6 sm:space-y-8">
 
                 {/* Student Card */}
-                <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 p-5 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
                     {/* Avatar */}
                     <div className="flex-shrink-0 h-24 w-24 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center shadow-lg">
                         <span className="text-3xl font-bold text-white">
@@ -110,8 +110,8 @@ export default function Portfolio() {
                         </h2>
                         <div className="space-y-3">
                             {breakdown.map(item => (
-                                <div key={item.category} className="flex items-center gap-3">
-                                    <span className="w-36 text-sm text-slate-600 font-medium truncate">{item.category}</span>
+                                <div key={item.category} className="flex items-center gap-2 sm:gap-3">
+                                    <span className="w-24 sm:w-36 text-xs sm:text-sm text-slate-600 font-medium truncate">{item.category}</span>
                                     <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
                                         <div
                                             className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
@@ -143,8 +143,8 @@ export default function Portfolio() {
                                 const colorClass = CATEGORY_COLORS[act.category] || CATEGORY_COLORS.default;
                                 const OutcomeIcon = OUTCOME_ICONS[act.outcome_type] || Code2;
                                 return (
-                                    <div key={act.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow">
-                                        <div className="flex items-start justify-between gap-3">
+                                    <div key={act.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
+                                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                                             <div className="flex items-start gap-3 flex-1">
                                                 <div className="p-2 bg-green-50 rounded-lg mt-0.5">
                                                     <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -170,7 +170,7 @@ export default function Portfolio() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="text-right flex-shrink-0">
+                                            <div className="flex items-center gap-2 sm:text-right flex-shrink-0">
                                                 <p className="text-xs text-slate-400">{new Date(act.date).toLocaleDateString()}</p>
                                                 {act.academic_year && <p className="text-xs text-slate-400 mt-1">{act.academic_year}</p>}
                                             </div>

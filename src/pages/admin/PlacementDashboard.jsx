@@ -66,14 +66,14 @@ export default function PlacementDashboard() {
     return (
         <div className="space-y-8 animate-enter pb-10">
             {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div className="flex flex-col gap-4">
                 <div>
-                    <h2 className="text-4xl font-bold tracking-tight text-slate-900">Placement Dashboard</h2>
-                    <p className="text-slate-500 mt-2 font-medium">Institutional readiness overview across all departments.</p>
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">Placement Dashboard</h2>
+                    <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base font-medium">Institutional readiness overview across all departments.</p>
                 </div>
                 <Button
                     onClick={() => downloadCSV(scoredStudents, 'vsarp_all_students.csv')}
-                    className="bg-slate-900 text-white hover:bg-slate-800 shadow-lg flex items-center gap-2"
+                    className="bg-slate-900 text-white hover:bg-slate-800 shadow-lg flex items-center gap-2 self-start text-xs sm:text-sm"
                 >
                     <Download className="w-4 h-4" />
                     Download Full Report (CSV)
@@ -81,7 +81,7 @@ export default function PlacementDashboard() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {[
                     { label: 'Total Students', value: scoredStudents.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: 'Avg. Score', value: scoredStudents.length ? Math.round(scoredStudents.reduce((s, u) => s + u.score, 0) / scoredStudents.length) : 0, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
@@ -90,13 +90,13 @@ export default function PlacementDashboard() {
                 ].map(card => {
                     const Icon = card.icon;
                     return (
-                        <div key={card.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex items-center gap-4">
+                        <div key={card.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5 flex items-center gap-3 sm:gap-4">
                             <div className={`p-3 rounded-xl ${card.bg}`}>
                                 <Icon className={`w-6 h-6 ${card.color}`} />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{card.label}</p>
-                                <p className="text-3xl font-bold text-slate-900">{card.value}</p>
+                                <p className="text-[10px] sm:text-xs text-slate-500 font-semibold uppercase tracking-wider">{card.label}</p>
+                                <p className="text-2xl sm:text-3xl font-bold text-slate-900">{card.value}</p>
                             </div>
                         </div>
                     );
@@ -135,7 +135,7 @@ export default function PlacementDashboard() {
                 )}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 {/* Top 10 Students */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
                     <h3 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">

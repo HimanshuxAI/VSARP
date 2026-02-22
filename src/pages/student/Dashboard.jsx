@@ -64,38 +64,39 @@ export default function StudentDashboard() {
     return (
         <div className="space-y-8 animate-enter pb-10">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+            <div className="flex flex-col gap-4">
                 <div>
-                    <h2 className="text-4xl font-bold tracking-tight text-slate-900 drop-shadow-sm">Student Portfolio</h2>
-                    <p className="text-slate-500 mt-2 font-medium">Manage your co-curricular record and career milestones.</p>
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 drop-shadow-sm">Student Portfolio</h2>
+                    <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base font-medium">Manage your co-curricular record and career milestones.</p>
                 </div>
-                <div className="flex gap-3 flex-wrap">
-                    <Button variant="ghost" className="h-10 text-gray-400 hover:text-white" onClick={() => alert('No new notifications')}>
-                        <Bell className="w-4 h-4 mr-2" />
-                        Alerts
+                <div className="flex gap-2 sm:gap-3 flex-wrap">
+                    <Button variant="ghost" className="h-9 sm:h-10 text-gray-400 hover:text-white text-xs sm:text-sm" onClick={() => alert('No new notifications')}>
+                        <Bell className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Alerts</span>
                     </Button>
-                    <Button variant="outline" className="h-10" onClick={fillRandomData}>
-                        <Database className="w-4 h-4 mr-2" />
-                        Fill Random Data
+                    <Button variant="outline" className="h-9 sm:h-10 text-xs sm:text-sm" onClick={fillRandomData}>
+                        <Database className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Fill Random Data</span>
                     </Button>
                     <Button
                         onClick={handleSharePortfolio}
                         variant="outline"
-                        className="h-10 border-blue-200 text-blue-700 hover:bg-blue-50"
+                        className="h-9 sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm"
                     >
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Share Portfolio
+                        <Share2 className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Share Portfolio</span>
                     </Button>
                     <Button
                         onClick={handleExportTranscript}
                         disabled={isExporting || approved === 0}
                         variant="default"
-                        className="h-10 shadow-lg transition-transform hover:scale-105 bg-slate-900 text-white hover:bg-slate-800"
+                        className="h-9 sm:h-10 shadow-lg transition-transform hover:scale-105 bg-slate-900 text-white hover:bg-slate-800 text-xs sm:text-sm"
                     >
-                        {isExporting ? 'Generating PDF...' : (
+                        {isExporting ? 'Generating...' : (
                             <>
-                                <Download className="w-4 h-4 mr-2" />
-                                Export Official Transcript
+                                <Download className="w-4 h-4 sm:mr-2" />
+                                <span className="hidden sm:inline">Export Official Transcript</span>
+                                <span className="sm:hidden">Export</span>
                             </>
                         )}
                     </Button>
@@ -138,14 +139,14 @@ export default function StudentDashboard() {
                         <div className="space-y-3">
                             {breakdown.map(item => (
                                 <div key={item.category} className="flex items-center gap-3">
-                                    <span className="w-36 text-sm text-slate-600 font-medium truncate">{item.category}</span>
+                                    <span className="w-20 sm:w-36 text-xs sm:text-sm text-slate-600 font-medium truncate">{item.category}</span>
                                     <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
                                         <div
                                             className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
                                             style={{ width: `${Math.min((item.points / 100) * 100, 100)}%` }}
                                         />
                                     </div>
-                                    <span className="text-xs font-mono font-bold text-slate-700 w-16 text-right">×{item.count} = +{item.points}</span>
+                                    <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-700 w-14 sm:w-16 text-right">×{item.count} = +{item.points}</span>
                                 </div>
                             ))}
                         </div>
@@ -236,28 +237,28 @@ export default function StudentDashboard() {
                                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                     <FileText className="w-24 h-24 text-slate-900 rotate-12" />
                                 </div>
-                                <div className="relative z-10 flex items-start justify-between">
-                                    <div className="flex items-start gap-4">
-                                        <div className={`p-3 rounded-xl ${activity.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                                    <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                                        <div className={`p-2 sm:p-3 rounded-xl flex-shrink-0 ${activity.status === 'approved' ? 'bg-green-100 text-green-700' :
                                             activity.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
                                             }`}>
-                                            {activity.status === 'approved' ? <CheckCircle2 className="w-6 h-6" /> :
-                                                activity.status === 'rejected' ? <XCircle className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
+                                            {activity.status === 'approved' ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" /> :
+                                                activity.status === 'rejected' ? <XCircle className="w-5 h-5 sm:w-6 sm:h-6" /> : <Clock className="w-5 h-5 sm:w-6 sm:h-6" />}
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-900 text-lg">{activity.title}</h3>
-                                            <p className="text-sm text-slate-500 flex items-center gap-2 mt-1">
+                                        <div className="min-w-0">
+                                            <h3 className="font-bold text-slate-900 text-base sm:text-lg truncate">{activity.title}</h3>
+                                            <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-2 mt-1">
                                                 <span>{new Date(activity.date).toLocaleDateString()}</span>
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <Badge variant="outline" className={`mb-2 ${activity.status === 'approved' ? 'border-green-200 text-green-700 bg-green-50' :
+                                    <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0 ml-10 sm:ml-0 flex-shrink-0">
+                                        <Badge variant="outline" className={`sm:mb-2 text-[10px] sm:text-xs ${activity.status === 'approved' ? 'border-green-200 text-green-700 bg-green-50' :
                                             activity.status === 'rejected' ? 'border-red-200 text-red-700 bg-red-50' : 'border-yellow-200 text-yellow-700 bg-yellow-50'
                                             }`}>
                                             {activity.status.toUpperCase()}
                                         </Badge>
-                                        <Button variant="ghost" size="sm" className="text-xs h-7 text-slate-400 hover:text-slate-900 hover:bg-slate-100 flex items-center ml-auto">
+                                        <Button variant="ghost" size="sm" className="text-xs h-7 text-slate-400 hover:text-slate-900 hover:bg-slate-100 flex items-center">
                                             View Details <ChevronRight className="w-3 h-3 ml-1" />
                                         </Button>
                                     </div>
