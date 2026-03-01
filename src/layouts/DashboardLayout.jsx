@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Command as CommandIcon, Users, Target, BookOpen, Briefcase, UserCheck, Menu, X } from 'lucide-react';
+import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Command as CommandIcon, Users, Target, BookOpen, Briefcase, UserCheck, Menu, X, GraduationCap, ClipboardList, Award, Eye, FileBarChart, UserCog, Filter, CalendarPlus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CommandPalette from '../components/CommandPalette';
 
@@ -26,6 +26,8 @@ export default function DashboardLayout() {
     const navItems = {
         student: [
             { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
+            { name: 'Academics', href: '/student/academics', icon: GraduationCap },
+            { name: 'Semester Results', href: '/student/results', icon: ClipboardList },
             { name: 'Career Navigator', href: '/student/career-navigator', icon: Target },
             { name: 'Submit Activity', href: '/student/submit', icon: FileText },
             { name: 'Resume Builder', href: '/student/resume', icon: FileText },
@@ -33,6 +35,16 @@ export default function DashboardLayout() {
         faculty: [
             { name: 'Review Pending', href: '/faculty/review', icon: CheckSquare },
             { name: 'Research Papers', href: '/faculty/publish-research', icon: BookOpen },
+        ],
+        hod: [
+            { name: 'Dept. Dashboard', href: '/hod/dashboard', icon: LayoutDashboard },
+            { name: 'Verify Activities', href: '/hod/verification', icon: Eye },
+            { name: 'Accreditation', href: '/hod/accreditation', icon: FileBarChart },
+            { name: 'Faculty Monitoring', href: '/hod/faculty-monitoring', icon: UserCog },
+        ],
+        placement_cell: [
+            { name: 'Placement Drives', href: '/placement/drives', icon: CalendarPlus },
+            { name: 'Student Filter', href: '/placement/filter', icon: Filter },
         ],
         admin: [
             { name: 'Overview', href: '/admin/overview', icon: LayoutDashboard },

@@ -23,6 +23,8 @@ export default function LoginPage() {
             if (user.role === 'student') navigate('/student/dashboard');
             else if (user.role === 'faculty') navigate('/faculty/review');
             else if (user.role === 'admin') navigate('/admin/overview');
+            else if (user.role === 'hod') navigate('/hod/dashboard');
+            else if (user.role === 'placement_cell') navigate('/placement/drives');
             else console.warn("Unknown user role:", user.role);
         }
     }, [user, navigate]);
@@ -52,6 +54,8 @@ export default function LoginPage() {
         if (role === 'student') { setEmail('student@test.com'); setPassword('password123'); }
         if (role === 'faculty') { setEmail('faculty@test.com'); setPassword('password123'); }
         if (role === 'admin') { setEmail('admin@test.com'); setPassword('password123'); }
+        if (role === 'hod') { setEmail('hod@test.com'); setPassword('password123'); }
+        if (role === 'placement') { setEmail('placement@test.com'); setPassword('password123'); }
     };
 
     return (
@@ -132,7 +136,7 @@ export default function LoginPage() {
                     <div className="mt-8 pt-6 border-t border-white/5 text-center">
                         <div className="flex justify-center gap-8 text-[10px] items-center text-slate-500 font-mono tracking-widest uppercase mt-8">Select Clearance Level</div>
                         <div className="flex justify-center gap-3">
-                            {['student', 'faculty', 'admin'].map(role => (
+                            {['student', 'faculty', 'admin', 'hod', 'placement'].map(role => (
                                 <button
                                     key={role}
                                     onClick={() => fillDemo(role)}

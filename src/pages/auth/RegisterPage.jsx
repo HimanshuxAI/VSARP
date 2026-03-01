@@ -87,7 +87,7 @@ export default function RegisterPage() {
                         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
                             {/* Role Selection */}
                             <div className="flex bg-slate-100 p-1 rounded-lg">
-                                {['student', 'faculty'].map((role) => (
+                                {['student', 'faculty', 'hod', 'placement_cell'].map((role) => (
                                     <button
                                         key={role}
                                         type="button"
@@ -97,7 +97,7 @@ export default function RegisterPage() {
                                             : 'text-slate-500 hover:text-slate-700'
                                             }`}
                                     >
-                                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                                        {role === 'placement_cell' ? 'Placement Cell' : role === 'hod' ? 'HOD' : role.charAt(0).toUpperCase() + role.slice(1)}
                                     </button>
                                 ))}
                             </div>

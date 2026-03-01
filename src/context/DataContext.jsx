@@ -12,6 +12,9 @@ export const DataProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     const [researchPapers, setResearchPapers] = useState([]);
+    const [courses, setCourses] = useState([]);
+    const [semesterResults, setSemesterResults] = useState([]);
+    const [placementDrives, setPlacementDrives] = useState([]);
 
     const isMockMode = supabase.supabaseKey.startsWith('sb_publishable_');
 
@@ -22,6 +25,9 @@ export const DataProvider = ({ children }) => {
             setActivities([]);
             setResearchPapers([]);
             setAuditLog([]);
+            setCourses([]);
+            setSemesterResults([]);
+            setPlacementDrives([]);
         }
     }, [user]);
 
@@ -33,19 +39,23 @@ export const DataProvider = ({ children }) => {
             const localActivities = JSON.parse(localStorage.getItem('vsarp_activities') || '[]');
             const localPapers = JSON.parse(localStorage.getItem('vsarp_research_papers') || '[]');
             const localLogs = JSON.parse(localStorage.getItem('vsarp_logs') || '[]');
+            const localCourses = JSON.parse(localStorage.getItem('vsarp_courses') || '[]');
+            const localResults = JSON.parse(localStorage.getItem('vsarp_semester_results') || '[]');
+            const localDrives = JSON.parse(localStorage.getItem('vsarp_placement_drives') || '[]');
             setActivities(localActivities);
             setResearchPapers(localPapers);
             setAuditLog(localLogs);
+            setCourses(localCourses);
+            setSemesterResults(localResults);
+            setPlacementDrives(localDrives);
             setLoading(false);
             return;
         }
 
         // REAL FETCH
-        // Fetch Categories
         const { data: catData } = await supabase.from('categories').select('name');
         if (catData && catData.length > 0) setCategories(catData.map(c => c.name));
 
-        // Fetch Activities
         const { data: actData } = await supabase
             .from('activities')
             .select('*')
@@ -53,7 +63,6 @@ export const DataProvider = ({ children }) => {
 
         if (actData) setActivities(actData);
 
-        // Fetch Research Papers
         const { data: paperData } = await supabase
             .from('research_papers')
             .select('*')
@@ -61,7 +70,6 @@ export const DataProvider = ({ children }) => {
 
         if (paperData) setResearchPapers(paperData);
 
-        // Fetch Logs (if Admin)
         if (user?.role === 'admin') {
             const { data: logData } = await supabase
                 .from('audit_logs')
@@ -72,7 +80,7 @@ export const DataProvider = ({ children }) => {
         setLoading(false);
     };
 
-    // Simple string hash for demo integrity (Replace with SHA-256 in production)
+    // Simple string hash for demo integrity
     const generateIntegrityHash = (activity, approverId, timestamp) => {
         const dataString = `${activity.id}|${activity.student_id}|${activity.title}|${approverId}|${timestamp}`;
         let hash = 0;
@@ -86,8 +94,8 @@ export const DataProvider = ({ children }) => {
 
     const addActivity = async (activity) => {
         const newActivity = {
-            id: isMockMode ? crypto.randomUUID() : undefined, // Generate ID locally for mock
-            student_id: user.id, // Enforce Auth ownership
+            id: isMockMode ? crypto.randomUUID() : undefined,
+            student_id: user.id,
             student_name: user.name,
             student_reg_no: user.student_id,
             department: user.department || activity.department || 'General',
@@ -114,7 +122,7 @@ export const DataProvider = ({ children }) => {
 
         const { data, error } = await supabase.from('activities').insert({
             ...newActivity,
-            student_id: user.id // Ensure strict ownership
+            student_id: user.id
         }).select().single();
 
         if (error) {
@@ -124,7 +132,6 @@ export const DataProvider = ({ children }) => {
         }
 
         setActivities([data, ...activities]);
-        // Log action only if success
         await logAction(user.id, user.role, 'SUBMISSION', data.id, `Submitted: ${activity.title}`);
         return true;
     };
@@ -164,7 +171,6 @@ export const DataProvider = ({ children }) => {
     };
 
     const updateStatus = async (id, status, comment, reviewerName, reviewerId) => {
-        // Optimistic Update
         let target = activities.find(a => a.id === id);
         if (!target) return;
 
@@ -204,9 +210,27 @@ export const DataProvider = ({ children }) => {
             return;
         }
 
-        // Refresh Data
         fetchData();
         logAction(reviewerId, 'faculty', status.toUpperCase(), id, `Status changed to ${status}`);
+    };
+
+    // HOD Level-2 verification
+    const hodVerifyActivity = (id, status, comment, hodName, hodId) => {
+        const updatedActivities = activities.map(a => {
+            if (a.id === id) {
+                return {
+                    ...a,
+                    hod_status: status,
+                    hod_comment: comment,
+                    hod_verified_by: hodName,
+                    hod_verified_at: new Date().toISOString()
+                };
+            }
+            return a;
+        });
+        setActivities(updatedActivities);
+        localStorage.setItem('vsarp_activities', JSON.stringify(updatedActivities));
+        logAction(hodId, 'hod', `HOD_${status.toUpperCase()}`, id, `HOD ${status}: ${comment}`);
     };
 
     const addCategory = async (category, adminId) => {
@@ -223,6 +247,75 @@ export const DataProvider = ({ children }) => {
                 logAction(adminId, 'admin', 'CONFIG_CHANGE', null, `Added category: ${category}`);
             }
         }
+    };
+
+    // Course enrollment
+    const addCourse = (course) => {
+        const newCourse = {
+            id: crypto.randomUUID(),
+            student_id: user.id,
+            course_name: course.course_name,
+            course_code: course.course_code,
+            credits: Number(course.credits),
+            semester: course.semester,
+            status: course.status || 'enrolled',
+            grade: course.grade || null,
+            created_at: new Date().toISOString()
+        };
+        const updated = [newCourse, ...courses];
+        setCourses(updated);
+        localStorage.setItem('vsarp_courses', JSON.stringify(updated));
+        return true;
+    };
+
+    // Semester results
+    const addSemesterResult = (result) => {
+        const newResult = {
+            id: crypto.randomUUID(),
+            student_id: user.id,
+            semester: result.semester,
+            subject: result.subject,
+            subject_code: result.subject_code,
+            credits: Number(result.credits),
+            marks: Number(result.marks),
+            max_marks: Number(result.max_marks) || 100,
+            grade: result.grade,
+            grade_points: Number(result.grade_points),
+            created_at: new Date().toISOString()
+        };
+        const updated = [newResult, ...semesterResults];
+        setSemesterResults(updated);
+        localStorage.setItem('vsarp_semester_results', JSON.stringify(updated));
+        return true;
+    };
+
+    // Placement drives
+    const addPlacementDrive = (drive) => {
+        const newDrive = {
+            id: crypto.randomUUID(),
+            company_name: drive.company_name,
+            role_offered: drive.role_offered,
+            package_lpa: drive.package_lpa,
+            drive_date: drive.drive_date,
+            eligibility_cgpa: drive.eligibility_cgpa || 0,
+            eligible_departments: drive.eligible_departments || [],
+            status: drive.status || 'upcoming',
+            description: drive.description || '',
+            registered_students: [],
+            created_by: user.id,
+            created_at: new Date().toISOString()
+        };
+        const updated = [newDrive, ...placementDrives];
+        setPlacementDrives(updated);
+        localStorage.setItem('vsarp_placement_drives', JSON.stringify(updated));
+        logAction(user.id, user.role, 'DRIVE_CREATED', newDrive.id, `Created drive: ${drive.company_name}`);
+        return true;
+    };
+
+    const updatePlacementDrive = (id, updates) => {
+        const updated = placementDrives.map(d => d.id === id ? { ...d, ...updates } : d);
+        setPlacementDrives(updated);
+        localStorage.setItem('vsarp_placement_drives', JSON.stringify(updated));
     };
 
     const logAction = async (actorId, role, actionType, recordId, details) => {
@@ -248,6 +341,8 @@ export const DataProvider = ({ children }) => {
     const getAllUsers = () => {
         return JSON.parse(localStorage.getItem('vsarp_users') || '[]');
     };
+
+    // --- Mock Data Generators ---
 
     const fillRandomData = async () => {
         if (!user) return alert("Please login first");
@@ -310,14 +405,12 @@ export const DataProvider = ({ children }) => {
             return;
         }
 
-        // Real Mode - Insert and Optimistic Update
         const { data, error } = await supabase.from('activities').insert(batch).select();
 
         if (error) {
             console.error(error);
             alert("Failed to insert random data: " + error.message);
         } else {
-            // Prepend new data to current state for instant update without reload
             setActivities(prev => [...data, ...prev]);
             alert("Added 5 random activities!");
         }
@@ -371,18 +464,141 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const fillRandomCourses = () => {
+        if (!user) return alert("Please login first");
+        const courseNames = [
+            'Data Structures & Algorithms', 'Database Management Systems', 'Operating Systems',
+            'Computer Networks', 'Software Engineering', 'Machine Learning',
+            'Web Technologies', 'Discrete Mathematics', 'Digital Electronics',
+            'Theory of Computation', 'Compiler Design', 'Cloud Computing'
+        ];
+        const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
+        const grades = ['A+', 'A', 'B+', 'B', 'C+', 'C', null];
+        const statuses = ['enrolled', 'completed', 'completed', 'completed'];
+
+        const batch = Array.from({ length: 6 }).map((_, i) => {
+            const status = statuses[Math.floor(Math.random() * statuses.length)];
+            return {
+                id: crypto.randomUUID(),
+                student_id: user.id,
+                course_name: courseNames[i % courseNames.length],
+                course_code: `CS${100 + i * 101}`,
+                credits: [3, 4, 3, 4, 3, 2][i % 6],
+                semester: semesters[Math.floor(Math.random() * semesters.length)],
+                status,
+                grade: status === 'completed' ? grades[Math.floor(Math.random() * (grades.length - 1))] : null,
+                created_at: new Date().toISOString()
+            };
+        });
+
+        const current = JSON.parse(localStorage.getItem('vsarp_courses') || '[]');
+        const updated = [...batch, ...current];
+        localStorage.setItem('vsarp_courses', JSON.stringify(updated));
+        setCourses(updated);
+        alert("Added 6 random courses!");
+    };
+
+    const fillRandomResults = () => {
+        if (!user) return alert("Please login first");
+        const subjects = [
+            { name: 'Data Structures', code: 'CS201', credits: 4 },
+            { name: 'DBMS', code: 'CS202', credits: 4 },
+            { name: 'Operating Systems', code: 'CS301', credits: 3 },
+            { name: 'Computer Networks', code: 'CS302', credits: 3 },
+            { name: 'Mathematics III', code: 'MA201', credits: 3 },
+            { name: 'Engineering Physics', code: 'PH101', credits: 3 },
+            { name: 'Soft Skills', code: 'HS201', credits: 2 },
+            { name: 'Machine Learning', code: 'CS401', credits: 4 },
+        ];
+        const gradeMap = { 'A+': 10, 'A': 9, 'B+': 8, 'B': 7, 'C+': 6, 'C': 5 };
+        const gradeKeys = Object.keys(gradeMap);
+
+        const batch = [];
+        for (let sem = 1; sem <= 4; sem++) {
+            const semSubjects = subjects.slice((sem - 1) * 2, (sem - 1) * 2 + 3).concat(subjects[sem % subjects.length]);
+            for (const subj of semSubjects) {
+                const grade = gradeKeys[Math.floor(Math.random() * gradeKeys.length)];
+                batch.push({
+                    id: crypto.randomUUID(),
+                    student_id: user.id,
+                    semester: String(sem),
+                    subject: subj.name,
+                    subject_code: subj.code,
+                    credits: subj.credits,
+                    marks: Math.floor(Math.random() * 40) + 60,
+                    max_marks: 100,
+                    grade,
+                    grade_points: gradeMap[grade],
+                    created_at: new Date().toISOString()
+                });
+            }
+        }
+
+        const current = JSON.parse(localStorage.getItem('vsarp_semester_results') || '[]');
+        const updated = [...batch, ...current];
+        localStorage.setItem('vsarp_semester_results', JSON.stringify(updated));
+        setSemesterResults(updated);
+        alert(`Added ${batch.length} semester results across 4 semesters!`);
+    };
+
+    const fillRandomDrives = () => {
+        if (!user) return alert("Please login first");
+        const companies = [
+            { name: 'TCS', role: 'Software Developer', pkg: '3.6' },
+            { name: 'Infosys', role: 'Systems Engineer', pkg: '3.6' },
+            { name: 'Wipro', role: 'Project Engineer', pkg: '3.5' },
+            { name: 'Microsoft', role: 'SDE Intern', pkg: '18' },
+            { name: 'Google', role: 'SWE Intern', pkg: '25' },
+            { name: 'Amazon', role: 'SDE-1', pkg: '20' },
+        ];
+        const depts = ['Computer Science', 'Electronics', 'Mechanical', 'Information Technology'];
+        const statuses = ['upcoming', 'ongoing', 'completed'];
+
+        const batch = companies.map((c, i) => ({
+            id: crypto.randomUUID(),
+            company_name: c.name,
+            role_offered: c.role,
+            package_lpa: c.pkg,
+            drive_date: new Date(Date.now() + (i - 2) * 7 * 86400000).toISOString().split('T')[0],
+            eligibility_cgpa: (5 + Math.random() * 3).toFixed(1),
+            eligible_departments: depts.slice(0, 2 + Math.floor(Math.random() * 3)),
+            status: statuses[i % statuses.length],
+            description: `Campus recruitment drive by ${c.name} for the role of ${c.role}.`,
+            registered_students: [],
+            created_by: user.id,
+            created_at: new Date().toISOString()
+        }));
+
+        const current = JSON.parse(localStorage.getItem('vsarp_placement_drives') || '[]');
+        const updated = [...batch, ...current];
+        localStorage.setItem('vsarp_placement_drives', JSON.stringify(updated));
+        setPlacementDrives(updated);
+        alert(`Added ${batch.length} placement drives!`);
+    };
+
     return (
         <DataContext.Provider value={{
             activities,
             researchPapers,
             categories,
             auditLog,
+            courses,
+            semesterResults,
+            placementDrives,
             addActivity,
             addResearchPaper,
             updateStatus,
+            hodVerifyActivity,
             addCategory,
+            addCourse,
+            addSemesterResult,
+            addPlacementDrive,
+            updatePlacementDrive,
             fillRandomData,
             fillRandomResearchPapers,
+            fillRandomCourses,
+            fillRandomResults,
+            fillRandomDrives,
             getAllUsers,
             loading
         }}>
@@ -392,3 +608,4 @@ export const DataProvider = ({ children }) => {
 };
 
 export const useData = () => useContext(DataContext);
+

@@ -13,6 +13,8 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import StudentDashboard from './pages/student/Dashboard';
 import SubmitActivity from './pages/student/SubmitActivity';
+import AcademicActivity from './pages/student/AcademicActivity';
+import SemesterResults from './pages/student/SemesterResults';
 import FacultyReview from './pages/faculty/Review';
 import PublishResearch from './pages/faculty/PublishResearch';
 import AdminOverview from './pages/admin/Overview';
@@ -31,6 +33,16 @@ import Portfolio from './pages/public/Portfolio';
 import PlacementDashboard from './pages/admin/PlacementDashboard';
 import StudentFilter from './pages/admin/StudentFilter';
 
+// HOD Pages
+import DepartmentDashboard from './pages/hod/DepartmentDashboard';
+import ActivityVerification from './pages/hod/ActivityVerification';
+import AccreditationReports from './pages/hod/AccreditationReports';
+import FacultyMonitoring from './pages/hod/FacultyMonitoring';
+
+// Placement Cell Pages
+import PlacementDrives from './pages/placement/PlacementDrives';
+import PlacementStudentFilter from './pages/placement/PlacementStudentFilter';
+
 // Transition Variants
 const pageVariants = {
   initial: { opacity: 0, scale: 0.98 },
@@ -44,6 +56,12 @@ const pageTransition = {
   duration: 0.4
 };
 
+const P = ({ children }) => (
+  <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
+    {children}
+  </motion.div>
+);
+
 function AnimatedRoutes() {
   const location = useLocation();
 
@@ -52,21 +70,9 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         {/* Public Routes */}
         <Route element={<PublicLayout />}>
-          <Route path="/login" element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-              <LoginPage />
-            </motion.div>
-          } />
-          <Route path="/register" element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-              <RegisterPage />
-            </motion.div>
-          } />
-          <Route path="/verify/:hash" element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-              <VerificationPage />
-            </motion.div>
-          } />
+          <Route path="/login" element={<P><LoginPage /></P>} />
+          <Route path="/register" element={<P><RegisterPage /></P>} />
+          <Route path="/verify/:hash" element={<P><VerificationPage /></P>} />
           <Route path="/seed" element={<SeedPage />} />
           <Route path="/portfolio/:studentId" element={<Portfolio />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
@@ -74,90 +80,48 @@ function AnimatedRoutes() {
 
         {/* Dashboard Layout Routes (Protected) */}
         <Route path="/" element={<DashboardLayout />}>
-          <Route path="profile" element={
-            <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-              <Profile />
-            </motion.div>
-          } />
+          <Route path="profile" element={<P><Profile /></P>} />
 
           {/* Student Routes */}
           <Route path="/student">
-            <Route path="dashboard" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <StudentDashboard />
-              </motion.div>
-            } />
-            <Route path="career-navigator" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <CareerNavigator />
-              </motion.div>
-            } />
-            <Route path="career-goals" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <CareerGoalDefinition />
-              </motion.div>
-            } />
-            <Route path="submit" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <SubmitActivity />
-              </motion.div>
-            } />
-            <Route path="resume" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <ResumeBuilder />
-              </motion.div>
-            } />
+            <Route path="dashboard" element={<P><StudentDashboard /></P>} />
+            <Route path="academics" element={<P><AcademicActivity /></P>} />
+            <Route path="results" element={<P><SemesterResults /></P>} />
+            <Route path="career-navigator" element={<P><CareerNavigator /></P>} />
+            <Route path="career-goals" element={<P><CareerGoalDefinition /></P>} />
+            <Route path="submit" element={<P><SubmitActivity /></P>} />
+            <Route path="resume" element={<P><ResumeBuilder /></P>} />
           </Route>
 
+          {/* Faculty Routes */}
           <Route path="/faculty">
-            <Route path="review" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <FacultyReview />
-              </motion.div>
-            } />
-            <Route path="publish-research" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <PublishResearch />
-              </motion.div>
-            } />
+            <Route path="review" element={<P><FacultyReview /></P>} />
+            <Route path="publish-research" element={<P><PublishResearch /></P>} />
           </Route>
 
+          {/* HOD Routes */}
+          <Route path="/hod">
+            <Route path="dashboard" element={<P><DepartmentDashboard /></P>} />
+            <Route path="verification" element={<P><ActivityVerification /></P>} />
+            <Route path="accreditation" element={<P><AccreditationReports /></P>} />
+            <Route path="faculty-monitoring" element={<P><FacultyMonitoring /></P>} />
+          </Route>
+
+          {/* Placement Cell Routes */}
+          <Route path="/placement">
+            <Route path="drives" element={<P><PlacementDrives /></P>} />
+            <Route path="filter" element={<P><PlacementStudentFilter /></P>} />
+          </Route>
+
+          {/* Admin Routes */}
           <Route path="/admin">
-            <Route path="overview" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <AdminOverview />
-              </motion.div>
-            } />
-            <Route path="approvals" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <UserApprovals />
-              </motion.div>
-            } />
-            <Route path="reports" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <Reports />
-              </motion.div>
-            } />
-            <Route path="audit" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <AuditLogs />
-              </motion.div>
-            } />
-            <Route path="settings" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <Configuration />
-              </motion.div>
-            } />
-            <Route path="placement" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <PlacementDashboard />
-              </motion.div>
-            } />
-            <Route path="shortlist" element={
-              <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
-                <StudentFilter />
-              </motion.div>
-            } />
+            <Route path="overview" element={<P><AdminOverview /></P>} />
+            <Route path="approvals" element={<P><UserApprovals /></P>} />
+            <Route path="reports" element={<P><Reports /></P>} />
+            <Route path="audit" element={<P><AuditLogs /></P>} />
+            <Route path="settings" element={<P><Configuration /></P>} />
+            <Route path="placement" element={<P><PlacementDashboard /></P>} />
+            <Route path="shortlist" element={<P><StudentFilter /></P>} />
           </Route>
         </Route>
       </Routes>

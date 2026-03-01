@@ -88,6 +88,8 @@ export const AuthProvider = ({ children }) => {
         let role = 'student';
         if (email.toLowerCase().includes('faculty')) role = 'faculty';
         if (email.toLowerCase().includes('admin')) role = 'admin';
+        if (email.toLowerCase().includes('hod')) role = 'hod';
+        if (email.toLowerCase().includes('placement')) role = 'placement_cell';
 
         const mockUser = {
             id: crypto.randomUUID(),
