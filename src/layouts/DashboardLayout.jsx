@@ -1,25 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Command as CommandIcon, Users, Target, BookOpen, Briefcase, UserCheck, Menu, X, GraduationCap, ClipboardList, Award, Eye, FileBarChart, UserCog, Filter, CalendarPlus } from 'lucide-react';
+import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Users, Target, BookOpen, Briefcase, UserCheck, Menu, X, GraduationCap, ClipboardList, FileBarChart, UserCog, Filter, CalendarPlus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CommandPalette from '../components/CommandPalette';
 
 export default function DashboardLayout() {
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-
-    // Close sidebar on route change (mobile)
-    useEffect(() => {
-        setSidebarOpen(false);
-    }, [location.pathname]);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background text-slate-500">
+                Checking your secure session...
+            </div>
+        );
+    }
 
     if (!user) return <Navigate to="/login" replace />;
 
@@ -28,6 +31,7 @@ export default function DashboardLayout() {
             { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
             { name: 'Academics', href: '/student/academics', icon: GraduationCap },
             { name: 'Semester Results', href: '/student/results', icon: ClipboardList },
+            { name: 'Placements', href: '/student/placements', icon: Briefcase },
             { name: 'Career Navigator', href: '/student/career-navigator', icon: Target },
             { name: 'Submit Activity', href: '/student/submit', icon: FileText },
             { name: 'Resume Builder', href: '/student/resume', icon: FileText },
@@ -38,7 +42,6 @@ export default function DashboardLayout() {
         ],
         hod: [
             { name: 'Dept. Dashboard', href: '/hod/dashboard', icon: LayoutDashboard },
-            { name: 'Verify Activities', href: '/hod/verification', icon: Eye },
             { name: 'Accreditation', href: '/hod/accreditation', icon: FileBarChart },
             { name: 'Faculty Monitoring', href: '/hod/faculty-monitoring', icon: UserCog },
         ],
@@ -121,6 +124,7 @@ export default function DashboardLayout() {
                                 <Link
                                     key={item.href}
                                     to={item.href}
+                                    onClick={() => setSidebarOpen(false)}
                                     className={cn(
                                         "flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group relative overflow-hidden",
                                         isActive

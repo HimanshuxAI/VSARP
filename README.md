@@ -62,11 +62,14 @@ VSARP (Virtual Student Academic Resource Portal) is a comprehensive, AI-powered 
     ```
     The app will open at `http://localhost:5173`.
 
-### 🧪 Mock Mode (Default)
-The application currently runs in **Mock Mode**. This means it does **not** require a connection to Supabase to function.
-- All data (users, activities, careers) is stored in your browser's `localStorage`.
-- You can essentially use the full app offline.
-- **To Reset Data**: Clear your browser's local storage for `localhost:5173`.
+### 🔐 Supabase Setup
+The app now supports both Supabase-backed mode and local mock mode.
+
+1. Copy [.env.example](/Users/himanshu/Desktop/vs/VSARP/.env.example) to `.env.local`
+2. Add your project URL and publishable key
+3. Run the SQL file at [schema.sql](/Users/himanshu/Desktop/vs/VSARP/supabase/schema.sql) in the Supabase SQL editor
+
+If no env vars are present, the app falls back to browser `localStorage` for quick demos.
 
 ### 🔑 Default Login Credentials
 Use these credentials to test different roles:
@@ -110,7 +113,7 @@ VSARP/
 
 ## 🗄️ Database Schema
 
-When you are ready to connect to a real backend, applying the provided SQL migrations will create the following structure:
+Run the single schema file at [schema.sql](/Users/himanshu/Desktop/vs/VSARP/supabase/schema.sql) to create the backend structure:
 
 - `users`: Core user profiles (linked to Auth).
 - `activities`: Student submissions with status workflow.
@@ -120,10 +123,10 @@ When you are ready to connect to a real backend, applying the provided SQL migra
 - `career_goals`: Links students to their target careers.
 - `research_papers`: Faculty publications.
 
-To apply migrations:
+To apply the backend:
 1.  Set up a Supabase project.
-2.  Copy keys to `.env` (see `.env.example`).
-3.  Run the SQL scripts in `supabase/migrations/` via the Supabase Dashboard SQL Editor.
+2.  Copy keys to `.env.local` (see `.env.example`).
+3.  Run `supabase/schema.sql` in the Supabase Dashboard SQL Editor.
 
 ---
 

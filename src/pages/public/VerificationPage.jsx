@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabase';
 import { Button } from '../../components/ui/button';
-import { ShieldCheck, XCircle, FileText, Download, Printer, QrCode, AlertTriangle } from 'lucide-react';
-import { Card, CardHeader, CardContent } from '../../components/ui/card';
+import { Card, CardContent, CardHeader } from '../../components/ui/card';
+import {
+    AlertTriangle,
+    CheckCircle2,
+    FileText,
+    Printer,
+    ShieldCheck,
+    XCircle,
+} from 'lucide-react';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
 
 export default function VerificationPage() {
     const { hash } = useParams();
@@ -11,198 +18,297 @@ export default function VerificationPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const verifyRecord = async () => {
+        const loadRecord = async () => {
             setLoading(true);
 
             if (hash === 'demo') {
-                // Keep Demo Logic
-                setTimeout(() => {
-                    setRecord({
-                        student_name: "Demo Student",
-                        student_id: "STU2025001",
-                        title: "National Hackathon Winner 2025 - First Place",
-                        category: "Academic",
-                        date: new Date().toISOString(),
-                        approved_by: "Dr. Anjali Sharma (Head of Dept)",
-                        approved_at: new Date().toISOString(),
-                        hash: "8f4b2e1c9d3a7e6f5b0c8d1a4e7b2c5f",
-                        status: "approved",
-                        proof_url: "#",
-                        institution: "Silicon Valley Institute of Technology",
-                        integrity_hash: "8f4b2e1c9d3a7e6f5b0c8d1a4e7b2c5f"
-                    });
-                    setLoading(false);
-                }, 800);
+                setRecord({
+                    kind: 'activity',
+                    student_name: 'Demo Student',
+                    student_reg_no: 'STU-2025-001',
+                    title: 'National Hackathon Winner 2025',
+                    category: 'Hackathon',
+                    date: new Date().toISOString(),
+                    approved_by: 'Dr. Anjali Sharma',
+                    approved_at: new Date().toISOString(),
+                    integrity_hash: hash,
+                    institution: 'VSARP',
+                });
+                setLoading(false);
                 return;
             }
 
-            // Real Supabase Fetch
-            const { data, error } = await supabase
-                .from('activities')
-                .select('*')
-                .eq('integrity_hash', hash) // Use the hash column
-                // Note: Schema uses 'integrity_hash', context used 'hash'. 
-                // Need to ensure schema column name matches.
-                // In schema.sql I defined it as 'integrity_hash'.
-                // In fillRandomData I used 'hash'. I should check if I need to map it.
-                // Actually, let's try to match either 'integrity_hash' or 'hash' if I made a mistake.
-                // But wait, schema.sql says 'integrity_hash'.
-                // DataContext says: 'hash: ...' in updateStatus but 'integrity_hash: hash' in update query.
-                // DataContext fillRandomData says 'hash: ...' and inserts 'hash'.
-                // Schema has 'integrity_hash'.
-                // If fillRandomData inserted a property named 'hash' but table has 'integrity_hash', it might have failed or ignored it?
-                // Or I might have mapped it in DataContext fetch?
-                // DataContext fetch select('*').
-                // I should verify column names.
-                .single();
+            if (!isSupabaseConfigured) {
+                const activities = JSON.parse(localStorage.getItem('vsarp_activities') || '[]');
+                const results = JSON.parse(localStorage.getItem('vsarp_semester_results') || '[]');
 
-            if (data && data.status === 'approved') {
+                const activity = activities.find(
+                    (item) =>
+                        item.integrity_hash === hash && item.status === 'approved'
+                );
+                const result = results.find(
+                    (item) =>
+                        item.verification_hash === hash &&
+                        item.verification_status === 'verified'
+                );
+
+                if (activity) {
+                    setRecord({ ...activity, kind: 'activity', institution: 'VSARP' });
+                } else if (result) {
+                    setRecord({ ...result, kind: 'result', institution: 'VSARP' });
+                } else {
+                    setRecord(null);
+                }
+
+                setLoading(false);
+                return;
+            }
+
+            const [activityResult, resultResult] = await Promise.all([
+                supabase
+                    .from('activities')
+                    .select('*')
+                    .eq('integrity_hash', hash)
+                    .eq('status', 'approved')
+                    .maybeSingle(),
+                supabase
+                    .from('semester_results')
+                    .select('*')
+                    .eq('verification_hash', hash)
+                    .eq('verification_status', 'verified')
+                    .maybeSingle(),
+            ]);
+
+            if (activityResult.data) {
                 setRecord({
-                    ...data,
-                    institution: "Silicon Valley Institute of Technology"
+                    ...activityResult.data,
+                    kind: 'activity',
+                    institution: 'VSARP',
+                });
+            } else if (resultResult.data) {
+                setRecord({
+                    ...resultResult.data,
+                    kind: 'result',
+                    institution: 'VSARP',
                 });
             } else {
                 setRecord(null);
             }
+
             setLoading(false);
         };
 
-        verifyRecord();
+        loadRecord();
     }, [hash]);
 
-    // -- STATE 1: LOADING --
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-blue-600 mb-4"></div>
-                <h2 className="text-xl font-medium text-gray-700">Verifying digital record...</h2>
-                <p className="text-sm text-gray-500 mt-2">Connecting to institutional ledger.</p>
+            <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4">
+                <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+                <h2 className="text-xl font-medium text-slate-700">
+                    Verifying record...
+                </h2>
+                <p className="mt-2 text-sm text-slate-500">
+                    Checking the institutional verification ledger.
+                </p>
             </div>
         );
     }
 
-    // -- STATE 3: INVALID / NOT FOUND --
     if (!record) {
         return (
-            <div className="min-h-screen bg-white flex items-center justify-center p-4">
-                <div className="max-w-md w-full text-center space-y-6">
-                    <div className="mx-auto bg-red-50 p-4 rounded-full w-20 h-20 flex items-center justify-center border border-red-100">
+            <div className="flex min-h-screen items-center justify-center bg-white px-4">
+                <div className="max-w-md space-y-6 text-center">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-red-100 bg-red-50">
                         <XCircle className="h-10 w-10 text-red-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Record Not Found or Invalid</h1>
-                        <p className="text-gray-500 mt-2 text-sm leading-relaxed">
-                            The verification ID <span className="font-mono bg-gray-100 px-1 py-0.5 rounded text-gray-700 mx-1">{hash}</span>
-                            does not match any approved institutional record in our system.
+                        <h1 className="text-2xl font-bold text-slate-900">
+                            Record Not Found
+                        </h1>
+                        <p className="mt-2 text-sm leading-6 text-slate-500">
+                            The verification code{' '}
+                            <span className="rounded bg-slate-100 px-1 py-0.5 font-mono text-slate-700">
+                                {hash}
+                            </span>{' '}
+                            does not match any verified activity or result record.
                         </p>
                     </div>
-                    <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg text-left text-xs text-yellow-800 flex gap-3">
-                        <AlertTriangle className="h-5 w-5 shrink-0" />
+                    <div className="flex gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-left text-xs text-yellow-800">
+                        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
                         <p>
-                            Possible reasons: The record may have been revoked, the hash is incorrect, or the activity is still pending approval.
-                            Please contact the student for a valid link.
+                            The record may still be pending verification, the code may
+                            be incorrect, or the entry may have been revoked.
                         </p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-8">System: SV-VSARP-VERIFY-NODE-1</p>
                 </div>
             </div>
         );
     }
 
-    // -- STATE 2: VERIFIED (SUCCESS) --
-    return (
-        <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 font-sans print:bg-white print:py-0">
-            {/* Header: Institution + Trust Signal */}
-            <div className="max-w-3xl mx-auto mb-8 text-center print:mb-4">
-                <h1 className="text-base font-bold text-gray-900 uppercase tracking-widest mb-1">{record.institution}</h1>
-                <p className="text-xs text-gray-500">Official Student Activity Verification Portal</p>
+    const verificationCode = record.integrity_hash || record.verification_hash || hash;
 
-                {/* QR Hint */}
-                <div className="mt-4 inline-flex items-center gap-2 bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-xs font-medium border border-blue-100 print:hidden">
-                    <QrCode className="w-3 h-3" />
-                    Accessed via official verification link
-                </div>
+    return (
+        <div className="min-h-screen bg-white px-4 py-12 print:bg-white print:py-0">
+            <div className="mx-auto mb-8 max-w-3xl text-center">
+                <h1 className="text-sm font-bold uppercase tracking-[0.3em] text-slate-900">
+                    {record.institution}
+                </h1>
+                <p className="mt-2 text-xs text-slate-500">
+                    Official Verification Portal
+                </p>
             </div>
 
-            {/* Main Trust Card */}
-            <Card className="max-w-3xl mx-auto shadow-none border-2 border-gray-900 rounded-none print:border-2 print:shadow-none">
-                <CardHeader className="bg-gray-900 text-white text-center py-6 print:bg-gray-200 print:text-black">
-                    <div className="flex justify-center mb-3">
-                        <ShieldCheck className="h-12 w-12 text-green-400 print:text-black" />
+            <Card className="mx-auto max-w-3xl rounded-none border-2 border-slate-900 shadow-none">
+                <CardHeader className="bg-slate-900 py-6 text-center text-white print:bg-slate-200 print:text-black">
+                    <div className="mb-3 flex justify-center">
+                        <ShieldCheck className="h-12 w-12 text-emerald-400 print:text-black" />
                     </div>
-                    <h2 className="text-2xl font-bold uppercase tracking-wide">Record Verified</h2>
-                    <p className="text-xs text-gray-400 mt-1 uppercase tracking-widest print:text-gray-600">Digital Identity # {record.hash.substring(0, 8).toUpperCase()}</p>
+                    <h2 className="text-2xl font-bold uppercase tracking-wide">
+                        Record Verified
+                    </h2>
+                    <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-300 print:text-slate-700">
+                        {record.kind === 'activity'
+                            ? 'Verified Activity Record'
+                            : 'Verified Semester Result'}
+                    </p>
                 </CardHeader>
 
-                <CardContent className="p-0">
-                    {/* Strict Table Layout */}
-                    <div className="divide-y divide-gray-200 text-sm">
-                        <div className="grid grid-cols-1 md:grid-cols-3 p-6 gap-4 items-center bg-gray-50 print:bg-gray-100">
-                            <span className="text-gray-500 uppercase tracking-wider font-bold text-xs md:col-span-1">Student Identity</span>
+                <CardContent className="p-0 text-sm">
+                    <div className="divide-y divide-slate-200">
+                        <div className="grid grid-cols-1 gap-4 bg-slate-50 p-6 md:grid-cols-3 print:bg-slate-100">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                Student
+                            </span>
                             <div className="md:col-span-2">
-                                <p className="text-lg font-bold text-gray-900">{record.student_name}</p>
-                                <p className="text-gray-600 font-mono">{record.student_id || 'STU-ID-MISSING'}</p>
+                                <p className="text-lg font-bold text-slate-900">
+                                    {record.student_name || 'Student'}
+                                </p>
+                                <p className="font-mono text-slate-600">
+                                    {record.student_reg_no || record.student_id || 'N/A'}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 p-6 gap-4 items-start">
-                            <span className="text-gray-500 uppercase tracking-wider font-bold text-xs md:col-span-1">Activity Record</span>
-                            <div className="md:col-span-2 space-y-1">
-                                <p className="text-base font-bold text-gray-900 leading-tight">{record.title}</p>
-                                <div className="flex gap-3 text-xs text-gray-600 pt-1">
-                                    <span className="bg-gray-100 px-2 py-0.5 rounded border">{record.category}</span>
-                                    <span className="bg-gray-100 px-2 py-0.5 rounded border">{new Date(record.date).toLocaleDateString()}</span>
+                        {record.kind === 'activity' ? (
+                            <>
+                                <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+                                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                        Activity
+                                    </span>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <p className="text-base font-bold text-slate-900">
+                                            {record.title}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 text-xs text-slate-600">
+                                            <span className="rounded border bg-slate-100 px-2 py-0.5">
+                                                {record.category}
+                                            </span>
+                                            <span className="rounded border bg-slate-100 px-2 py-0.5">
+                                                {new Date(record.date).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        {record.description && (
+                                            <p className="text-sm leading-6 text-slate-600">
+                                                {record.description}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 p-6 gap-4 items-center">
-                            <span className="text-gray-500 uppercase tracking-wider font-bold text-xs md:col-span-1">Approval Authority</span>
-                            <div className="md:col-span-2">
-                                <p className="font-medium text-gray-900">{record.approved_by}</p>
-                                <p className="text-xs text-gray-500">Authorized Faculty / Admin</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 p-6 gap-4 items-center bg-blue-50/50 print:bg-white">
-                            <span className="text-gray-500 uppercase tracking-wider font-bold text-xs md:col-span-1">Digital Proof</span>
-                            <div className="md:col-span-2 flex items-center gap-4">
-                                <div className="flex items-center gap-2 text-blue-900 font-medium">
-                                    <FileText className="w-5 h-5" />
-                                    <span>Document Attached</span>
+                                <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+                                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                        Approved By
+                                    </span>
+                                    <div className="md:col-span-2">
+                                        <p className="font-medium text-slate-900">
+                                            {record.approved_by}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                            {new Date(record.approved_at).toLocaleString()}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex gap-2 print:hidden">
-                                    <Button size="sm" variant="outline" className="h-8 text-xs bg-white" onClick={() => window.open(record.proof_url, '_blank')}>
-                                        View
+                            </>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+                                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                        Result
+                                    </span>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <p className="text-base font-bold text-slate-900">
+                                            {record.subject}
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 text-xs text-slate-600">
+                                            <span className="rounded border bg-slate-100 px-2 py-0.5">
+                                                Semester {record.semester}
+                                            </span>
+                                            <span className="rounded border bg-slate-100 px-2 py-0.5">
+                                                {record.subject_code}
+                                            </span>
+                                            <span className="rounded border bg-emerald-50 px-2 py-0.5 text-emerald-700">
+                                                Grade {record.grade}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-3">
+                                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                        Verified Marks
+                                    </span>
+                                    <div className="md:col-span-2">
+                                        <p className="font-medium text-slate-900">
+                                            {record.marks}/{record.max_marks} • Credits {record.credits}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                            Verified by {record.verified_by} on{' '}
+                                            {new Date(record.verified_at).toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="grid grid-cols-1 gap-4 bg-slate-50 p-6 md:grid-cols-3 print:bg-white">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+                                Verification Code
+                            </span>
+                            <div className="break-all font-mono text-xs text-slate-700 md:col-span-2">
+                                {verificationCode}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-6 print:hidden">
+                            <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700">
+                                <CheckCircle2 className="h-4 w-4" />
+                                Digitally verified by VSARP
+                            </div>
+                            <div className="flex gap-2">
+                                {record.proof_url && (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => window.open(record.proof_url, '_blank')}
+                                    >
+                                        <FileText className="mr-2 h-3 w-3" />
+                                        View proof
                                     </Button>
-                                    <Button size="sm" variant="outline" className="h-8 text-xs bg-white" onClick={() => window.print()}>
-                                        <Printer className="w-3 h-3 mr-1" /> Print
-                                    </Button>
-                                </div>
+                                )}
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.print()}
+                                >
+                                    <Printer className="mr-2 h-3 w-3" />
+                                    Print
+                                </Button>
                             </div>
-                        </div>
-
-                        <div className="p-6 bg-gray-900 text-gray-400 text-xs font-mono break-all print:text-black print:bg-white print:border-t">
-                            <p className="uppercase tracking-widest mb-2 text-gray-500 print:text-black">Cryptographic Verification HASH</p>
-                            {record.hash}
-                            <p className="mt-4 text-[10px] text-gray-600 print:text-black">
-                                Timestmap: {new Date(record.approved_at).toISOString()} | Server: SV-NODE-AUTH-1
-                            </p>
                         </div>
                     </div>
                 </CardContent>
             </Card>
-
-            {/* Anti-Spoofing Footer */}
-            <div className="text-center mt-8 space-y-2 max-w-2xl mx-auto print:hidden">
-                <p className="text-xs text-gray-400 flex items-center justify-center gap-2">
-                    <ShieldCheck className="w-3 h-3" />
-                    This record is digitally signed by {record.institution}.
-                </p>
-                <div className="text-[10px] text-gray-300">
-                    Terms of Use | Privacy Policy | Report Fraud
-                </div>
-            </div>
         </div>
     );
 }

@@ -15,6 +15,7 @@ import StudentDashboard from './pages/student/Dashboard';
 import SubmitActivity from './pages/student/SubmitActivity';
 import AcademicActivity from './pages/student/AcademicActivity';
 import SemesterResults from './pages/student/SemesterResults';
+import PlacementHub from './pages/student/PlacementHub';
 import FacultyReview from './pages/faculty/Review';
 import PublishResearch from './pages/faculty/PublishResearch';
 import AdminOverview from './pages/admin/Overview';
@@ -35,7 +36,6 @@ import StudentFilter from './pages/admin/StudentFilter';
 
 // HOD Pages
 import DepartmentDashboard from './pages/hod/DepartmentDashboard';
-import ActivityVerification from './pages/hod/ActivityVerification';
 import AccreditationReports from './pages/hod/AccreditationReports';
 import FacultyMonitoring from './pages/hod/FacultyMonitoring';
 
@@ -56,10 +56,12 @@ const pageTransition = {
   duration: 0.4
 };
 
+const MotionDiv = motion.div;
+
 const P = ({ children }) => (
-  <motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
+  <MotionDiv initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition} className="w-full h-full">
     {children}
-  </motion.div>
+  </MotionDiv>
 );
 
 function AnimatedRoutes() {
@@ -83,10 +85,11 @@ function AnimatedRoutes() {
           <Route path="profile" element={<P><Profile /></P>} />
 
           {/* Student Routes */}
-          <Route path="/student">
+            <Route path="/student">
             <Route path="dashboard" element={<P><StudentDashboard /></P>} />
             <Route path="academics" element={<P><AcademicActivity /></P>} />
             <Route path="results" element={<P><SemesterResults /></P>} />
+            <Route path="placements" element={<P><PlacementHub /></P>} />
             <Route path="career-navigator" element={<P><CareerNavigator /></P>} />
             <Route path="career-goals" element={<P><CareerGoalDefinition /></P>} />
             <Route path="submit" element={<P><SubmitActivity /></P>} />
@@ -102,7 +105,6 @@ function AnimatedRoutes() {
           {/* HOD Routes */}
           <Route path="/hod">
             <Route path="dashboard" element={<P><DepartmentDashboard /></P>} />
-            <Route path="verification" element={<P><ActivityVerification /></P>} />
             <Route path="accreditation" element={<P><AccreditationReports /></P>} />
             <Route path="faculty-monitoring" element={<P><FacultyMonitoring /></P>} />
           </Route>

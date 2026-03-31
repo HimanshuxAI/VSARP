@@ -3,7 +3,33 @@ import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
+
+function FieldRow({
+    label,
+    value,
+    isEditable = false,
+    editValue,
+    setEditValue,
+    highlight = false,
+    isEditing = false,
+}) {
+    return (
+        <tr className="border-b border-gray-200 last:border-0">
+            <td className="py-3 pl-0 pr-4 w-1/3 text-sm font-bold text-gray-700 uppercase tracking-widest">{label}</td>
+            <td className={`py-3 px-0 w-2/3 text-base ${highlight ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}>
+                {isEditable && isEditing ? (
+                    <Input
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        className="max-w-[200px] h-10 text-base"
+                    />
+                ) : (
+                    value
+                )}
+            </td>
+        </tr>
+    );
+}
 
 export default function Profile() {
     const { user } = useAuth();
@@ -22,23 +48,6 @@ export default function Profile() {
         setMessage('Profile updated successfully.');
         setTimeout(() => setMessage(''), 3000);
     };
-
-    const FieldRow = ({ label, value, isEditable = false, editValue, setEditValue, highlight = false }) => (
-        <tr className="border-b border-gray-200 last:border-0">
-            <td className="py-3 pl-0 pr-4 w-1/3 text-sm font-bold text-gray-700 uppercase tracking-widest">{label}</td>
-            <td className={`py-3 px-0 w-2/3 text-base ${highlight ? 'font-bold text-gray-900' : 'font-medium text-gray-800'}`}>
-                {isEditable && isEditing ? (
-                    <Input
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        className="max-w-[200px] h-10 text-base"
-                    />
-                ) : (
-                    value
-                )}
-            </td>
-        </tr>
-    );
 
     return (
         <div className="max-w-4xl mx-auto space-y-6">
@@ -63,11 +72,11 @@ export default function Profile() {
                 <div className="p-6">
                     <table className="w-full">
                         <tbody className="divide-y divide-gray-200 block">
-                            <FieldRow label="Full Name" value={user.name} highlight={true} />
-                            <FieldRow label="Institutional ID" value={user.id} highlight={true} />
-                            <FieldRow label="Email Address" value={`${user.role}@college.edu`} />
-                            <FieldRow label="Department" value={user.role === 'student' ? 'Computer Science' : 'Administration'} />
-                            <FieldRow label="Academic Year" value="2025-2026" />
+                            <FieldRow label="Full Name" value={user.name} highlight={true} isEditing={isEditing} />
+                            <FieldRow label="Institutional ID" value={user.student_id || user.id} highlight={true} isEditing={isEditing} />
+                            <FieldRow label="Email Address" value={user.email || 'Not available'} isEditing={isEditing} />
+                            <FieldRow label="Department" value={user.department || 'General'} isEditing={isEditing} />
+                            <FieldRow label="Academic Year" value="2025-2026" isEditing={isEditing} />
 
                             {user.role === 'student' && (
                                 <FieldRow
@@ -76,11 +85,12 @@ export default function Profile() {
                                     isEditable={true}
                                     editValue={phone}
                                     setEditValue={setPhone}
+                                    isEditing={isEditing}
                                 />
                             )}
 
                             {user.role !== 'student' && (
-                                <FieldRow label="Accountability Metric" value={`${approvedCount} Activities Approved`} />
+                                <FieldRow label="Accountability Metric" value={`${approvedCount} Activities Approved`} isEditing={isEditing} />
                             )}
                         </tbody>
                     </table>

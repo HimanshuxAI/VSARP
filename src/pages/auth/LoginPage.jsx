@@ -8,7 +8,7 @@ import { ShieldCheck, User, Lock, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function LoginPage() {
-    const { login, user } = useAuth();
+    const { login, user, loading: authLoading, isSupabaseConfigured } = useAuth();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -17,17 +17,14 @@ export default function LoginPage() {
     const [activeTab, setActiveTab] = useState('student');
 
     useEffect(() => {
-        console.log("LoginPage Effect: User changed:", user);
-        if (user) {
-            console.log("User Role:", user.role);
+        if (!authLoading && user) {
             if (user.role === 'student') navigate('/student/dashboard');
             else if (user.role === 'faculty') navigate('/faculty/review');
             else if (user.role === 'admin') navigate('/admin/overview');
             else if (user.role === 'hod') navigate('/hod/dashboard');
             else if (user.role === 'placement_cell') navigate('/placement/drives');
-            else console.warn("Unknown user role:", user.role);
         }
-    }, [user, navigate]);
+    }, [authLoading, navigate, user]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -35,21 +32,19 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            console.log("Attempting login...");
             await login(email, password);
-            console.log("Login function returned.");
-            // We do NOT set loading false here immediately to avoid flash, 
-            // BUT if we are stuck, we should. 
-            // Let's set it false and let the redirect happen if it happens.
             setLoading(false);
         } catch (err) {
-            console.error("Login Error:", err);
             setError(err.message || 'Failed to sign in');
             setLoading(false);
         }
     };
 
     const fillDemo = (role) => {
+        if (isSupabaseConfigured) {
+            return;
+        }
+
         setActiveTab(role);
         if (role === 'student') { setEmail('student@test.com'); setPassword('password123'); }
         if (role === 'faculty') { setEmail('faculty@test.com'); setPassword('password123'); }
@@ -93,11 +88,12 @@ export default function LoginPage() {
                             <div className="relative group">
                                 <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-slate-900 transition-colors" />
                                 <Input
-                                    type="text"
-                                    placeholder="Identity ID"
+                                    type="email"
+                                    placeholder="Email address"
                                     className="pl-12 h-12 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:ring-slate-900/10 rounded-xl transition-all"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
+                                    disabled={loading || authLoading}
                                 />
                             </div>
                             <div className="relative group">
@@ -108,6 +104,7 @@ export default function LoginPage() {
                                     className="pl-12 h-12 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-slate-900 focus:ring-slate-900/10 rounded-xl transition-all"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    disabled={loading || authLoading}
                                 />
                             </div>
                         </div>
@@ -119,8 +116,12 @@ export default function LoginPage() {
                             </motion.div>
                         )}
 
-                        <Button type="submit" variant="default" className="w-full h-12 text-lg font-bold tracking-wide shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all" disabled={loading}>
-                            {loading ? 'Authenticating...' : 'Access Portal'}
+                        <Button type="submit" variant="default" className="w-full h-12 text-lg font-bold tracking-wide shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all" disabled={loading || authLoading}>
+                            {authLoading
+                                ? 'Checking session...'
+                                : loading
+                                  ? 'Authenticating...'
+                                  : 'Access Portal'}
                         </Button>
                         <div className="text-center mt-4">
                             <span className="text-sm text-slate-500">New here? </span>
@@ -131,25 +132,32 @@ export default function LoginPage() {
                                 Create an Account
                             </span>
                         </div>
+                        {isSupabaseConfigured && (
+                            <p className="text-center text-xs text-slate-500">
+                                Supabase auth is enabled. Sign in with an approved account.
+                            </p>
+                        )}
                     </form>
 
-                    <div className="mt-8 pt-6 border-t border-white/5 text-center">
-                        <div className="flex justify-center gap-8 text-[10px] items-center text-slate-500 font-mono tracking-widest uppercase mt-8">Select Clearance Level</div>
-                        <div className="flex justify-center gap-3">
-                            {['student', 'faculty', 'admin', 'hod', 'placement'].map(role => (
-                                <button
-                                    key={role}
-                                    onClick={() => fillDemo(role)}
-                                    className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${activeTab === role
-                                        ? 'bg-slate-900 text-white shadow-md'
-                                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold'
-                                        }`}
-                                >
-                                    {role.charAt(0).toUpperCase() + role.slice(1)}
-                                </button>
-                            ))}
+                    {!isSupabaseConfigured && (
+                        <div className="mt-8 pt-6 border-t border-white/5 text-center">
+                            <div className="flex justify-center gap-8 text-[10px] items-center text-slate-500 font-mono tracking-widest uppercase mt-8">Select Clearance Level</div>
+                            <div className="flex justify-center gap-3">
+                                {['student', 'faculty', 'admin', 'hod', 'placement'].map(role => (
+                                    <button
+                                        key={role}
+                                        onClick={() => fillDemo(role)}
+                                        className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${activeTab === role
+                                            ? 'bg-slate-900 text-white shadow-md'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-semibold'
+                                            }`}
+                                    >
+                                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 <p className="text-center mt-8 text-xs text-gray-600/50 hover:text-gray-500 transition-colors cursor-pointer" onClick={() => navigate('/verify/demo')}>

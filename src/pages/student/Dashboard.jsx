@@ -1,274 +1,507 @@
-import React, { useState } from 'react';
-import { useData } from '../../context/DataContext';
-import { useAuth } from '../../context/AuthContext';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
+import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 import { Badge } from '../../components/ui/badge';
-import { Download, Bell, Award, Briefcase, ChevronRight, CheckCircle, XCircle, Clock, Database, Sparkles, FileText, AlertCircle, CheckCircle2, Share2, TrendingUp } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/card';
-import { computeEmployabilityScore } from '../../lib/employabilityScore';
+import { Button } from '../../components/ui/button';
+import {
+    AlertCircle,
+    Bell,
+    Briefcase,
+    CheckCircle2,
+    ChevronRight,
+    Clock,
+    Database,
+    Download,
+    FileText,
+    Share2,
+    Sparkles,
+    Trash2,
+    XCircle,
+} from 'lucide-react';
+import {
+    computeCgpa,
+    getStudentSkills,
+    matchDriveToStudent,
+} from '../../lib/placement';
 
 export default function StudentDashboard() {
-    const { activities, loading, fillRandomData } = useData();
     const { user } = useAuth();
+    const {
+        activities,
+        semesterResults,
+        placementDrives,
+        notifications,
+        fillRandomData,
+        deleteRejectedActivity,
+        markNotificationRead,
+        loading,
+    } = useData();
     const navigate = useNavigate();
+
     const [statusFilter, setStatusFilter] = useState('all');
     const [isExporting, setIsExporting] = useState(false);
+
+    const myActivities = useMemo(
+        () => activities.filter((activity) => activity.student_id === user.id),
+        [activities, user.id]
+    );
+    const myResults = useMemo(
+        () => semesterResults.filter((result) => result.student_id === user.id),
+        [semesterResults, user.id]
+    );
+    const myNotifications = useMemo(
+        () =>
+            notifications
+                .filter((notification) => notification.profile_id === user.id)
+                .sort(
+                    (left, right) =>
+                        new Date(right.created_at) - new Date(left.created_at)
+                ),
+        [notifications, user.id]
+    );
+    const cgpa = useMemo(() => computeCgpa(myResults), [myResults]);
+    const studentSkills = useMemo(
+        () =>
+            getStudentSkills({
+                activities,
+                semesterResults,
+                studentId: user.id,
+                profileSkills: user.skills,
+            }),
+        [activities, semesterResults, user.id, user.skills]
+    );
+
+    const matchedOpenings = useMemo(() => {
+        return placementDrives.filter((drive) => {
+            const match = matchDriveToStudent({
+                drive,
+                department: user.department,
+                cgpa,
+                skills: studentSkills,
+            });
+
+            return match.eligible && ['open', 'upcoming'].includes(drive.status);
+        });
+    }, [cgpa, placementDrives, studentSkills, user.department]);
+
+    const verifiedActivities = myActivities.filter(
+        (activity) => activity.status === 'approved'
+    );
+    const pendingActivities = myActivities.filter(
+        (activity) => activity.status === 'pending'
+    );
+    const rejectedActivities = myActivities.filter(
+        (activity) => activity.status === 'rejected'
+    );
+    const unreadNotifications = myNotifications.filter(
+        (notification) => !notification.is_read
+    );
+
+    const filteredActivities =
+        statusFilter === 'all'
+            ? myActivities
+            : myActivities.filter((activity) => activity.status === statusFilter);
 
     if (loading) {
         return (
             <div className="flex h-full items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-slate-900"></div>
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
             </div>
         );
     }
 
-    // Filter Data
-    const myActivities = activities.filter(a => a.student_id === user.id);
-    const approved = myActivities.filter(a => a.status === 'approved').length;
-
-    // Employability Score
-    const { score, breakdown, level, levelColor } = computeEmployabilityScore(myActivities);
-    const scorePercent = Math.min(score, 100);
-    const arcColor = score >= 80 ? '#7c3aed' : score >= 60 ? '#16a34a' : score >= 40 ? '#ca8a04' : score > 0 ? '#ea580c' : '#9ca3af';
-
     const handleSharePortfolio = () => {
         const url = `${window.location.origin}/portfolio/${user.id}`;
-        navigator.clipboard.writeText(url).then(() => {
-            alert(`Portfolio link copied!\n\n${url}`);
-        }).catch(() => {
-            prompt('Copy this link:', url);
-        });
+        navigator.clipboard
+            .writeText(url)
+            .then(() => {
+                alert(`Portfolio link copied.\n\n${url}`);
+            })
+            .catch(() => {
+                prompt('Copy this link:', url);
+            });
     };
 
-    // "Career Impact" Mock Logic
-    const skillsEarned = [
-        { name: "Leadership", count: myActivities.filter(a => a.category === 'Leadership' && a.status === 'approved').length },
-        { name: "Teamwork", count: myActivities.filter(a => (a.category === 'Sports' || a.category === 'Cultural') && a.status === 'approved').length },
-        { name: "Social Resp.", count: myActivities.filter(a => a.category === 'Social Service' && a.status === 'approved').length },
-    ].filter(s => s.count > 0);
-
-    const filteredList = statusFilter === 'all'
-        ? myActivities
-        : myActivities.filter(a => a.status === statusFilter);
-
-    // Mock PDF Export
     const handleExportTranscript = () => {
         setIsExporting(true);
         setTimeout(() => {
-            alert(`Official Verified Activity Transcript generated for ${user.name}.\n\nContains ${approved} verified records.\n(Mock Download Initiated)`);
+            alert(
+                `Verified activity transcript prepared for ${user.name}.\n\nIncludes ${verifiedActivities.length} verified records.`
+            );
             setIsExporting(false);
-        }, 1500);
+        }, 1200);
     };
 
     return (
         <div className="space-y-8 animate-enter pb-10">
-            {/* Header Area */}
             <div className="flex flex-col gap-4">
                 <div>
-                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900 drop-shadow-sm">Student Portfolio</h2>
-                    <p className="text-slate-500 mt-1 sm:mt-2 text-sm sm:text-base font-medium">Manage your co-curricular record and career milestones.</p>
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl lg:text-4xl">
+                        Student Portfolio
+                    </h2>
+                    <p className="mt-2 text-sm font-medium text-slate-500 sm:text-base">
+                        Track approvals, verified skills, and placement readiness from
+                        one clean workspace.
+                    </p>
                 </div>
-                <div className="flex gap-2 sm:gap-3 flex-wrap">
-                    <Button variant="ghost" className="h-9 sm:h-10 text-gray-400 hover:text-white text-xs sm:text-sm" onClick={() => alert('No new notifications')}>
-                        <Bell className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Alerts</span>
-                    </Button>
-                    <Button variant="outline" className="h-9 sm:h-10 text-xs sm:text-sm" onClick={fillRandomData}>
-                        <Database className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Fill Random Data</span>
+
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        variant="ghost"
+                        className="text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:text-sm"
+                        onClick={() => navigate('/student/placements')}
+                    >
+                        <Bell className="mr-2 h-4 w-4" />
+                        Placement Alerts
                     </Button>
                     <Button
-                        onClick={handleSharePortfolio}
                         variant="outline"
-                        className="h-9 sm:h-10 border-blue-200 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm"
+                        className="text-xs sm:text-sm"
+                        onClick={fillRandomData}
                     >
-                        <Share2 className="w-4 h-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Share Portfolio</span>
+                        <Database className="mr-2 h-4 w-4" />
+                        Fill Random Data
                     </Button>
                     <Button
-                        onClick={handleExportTranscript}
-                        disabled={isExporting || approved === 0}
-                        variant="default"
-                        className="h-9 sm:h-10 shadow-lg transition-transform hover:scale-105 bg-slate-900 text-white hover:bg-slate-800 text-xs sm:text-sm"
+                        variant="outline"
+                        className="border-blue-200 text-blue-700 hover:bg-blue-50 text-xs sm:text-sm"
+                        onClick={handleSharePortfolio}
                     >
-                        {isExporting ? 'Generating...' : (
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Share Portfolio
+                    </Button>
+                    <Button
+                        disabled={isExporting || verifiedActivities.length === 0}
+                        className="bg-slate-900 text-white hover:bg-slate-800 text-xs sm:text-sm"
+                        onClick={handleExportTranscript}
+                    >
+                        {isExporting ? (
+                            'Generating...'
+                        ) : (
                             <>
-                                <Download className="w-4 h-4 sm:mr-2" />
-                                <span className="hidden sm:inline">Export Official Transcript</span>
-                                <span className="sm:hidden">Export</span>
+                                <Download className="mr-2 h-4 w-4" />
+                                Export Transcript
                             </>
                         )}
                     </Button>
                 </div>
             </div>
 
-            {/* Employability Score Card */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Score Gauge */}
-                <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 flex flex-col items-center justify-center">
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-3">Employability Score</p>
-                    <div className="relative w-32 h-32">
-                        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="10" />
-                            <circle
-                                cx="50" cy="50" r="40" fill="none"
-                                stroke={arcColor} strokeWidth="10"
-                                strokeDasharray={`${2 * Math.PI * 40}`}
-                                strokeDashoffset={`${2 * Math.PI * 40 * (1 - scorePercent / 100)}`}
-                                strokeLinecap="round"
-                            />
-                        </svg>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <span className="text-3xl font-bold text-slate-900">{score}</span>
-                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">/ 100</span>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {[
+                    {
+                        label: 'Verified Activities',
+                        value: verifiedActivities.length,
+                        accent: 'bg-emerald-50 text-emerald-700',
+                    },
+                    {
+                        label: 'Pending Review',
+                        value: pendingActivities.length,
+                        accent: 'bg-amber-50 text-amber-700',
+                    },
+                    {
+                        label: 'Matched Openings',
+                        value: matchedOpenings.length,
+                        accent: 'bg-blue-50 text-blue-700',
+                    },
+                    {
+                        label: 'Unread Alerts',
+                        value: unreadNotifications.length,
+                        accent: 'bg-violet-50 text-violet-700',
+                    },
+                ].map((card) => (
+                    <div
+                        key={card.label}
+                        className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm"
+                    >
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                                    {card.label}
+                                </p>
+                                <p className="mt-3 text-3xl font-bold text-slate-900">
+                                    {card.value}
+                                </p>
+                            </div>
+                            <div className={`rounded-2xl px-3 py-2 text-xs font-semibold ${card.accent}`}>
+                                Live
+                            </div>
                         </div>
                     </div>
-                    <p className={`mt-2 text-sm font-bold ${levelColor}`}>{level} Level</p>
-                </div>
+                ))}
+            </div>
 
-                {/* Score Breakdown */}
-                <div className="md:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-                    <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-blue-500" />
-                        Score Breakdown (Approved Only)
-                    </h3>
-                    {breakdown.length === 0 ? (
-                        <p className="text-slate-400 text-sm">No approved activities yet. Submit and get approvals to earn points!</p>
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                    <div className="mb-5 flex items-center justify-between">
+                        <div>
+                            <h3 className="text-lg font-bold text-slate-900">
+                                Latest Placement Alerts
+                            </h3>
+                            <p className="mt-1 text-sm text-slate-500">
+                                New drives and activity decisions land here first.
+                            </p>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            className="text-xs sm:text-sm"
+                            onClick={() => navigate('/student/placements')}
+                        >
+                            Open Placement Hub
+                        </Button>
+                    </div>
+
+                    {myNotifications.length === 0 ? (
+                        <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-400">
+                            No alerts yet.
+                        </div>
                     ) : (
                         <div className="space-y-3">
-                            {breakdown.map(item => (
-                                <div key={item.category} className="flex items-center gap-3">
-                                    <span className="w-20 sm:w-36 text-xs sm:text-sm text-slate-600 font-medium truncate">{item.category}</span>
-                                    <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                            style={{ width: `${Math.min((item.points / 100) * 100, 100)}%` }}
-                                        />
+                            {myNotifications.slice(0, 4).map((notification) => (
+                                <div
+                                    key={notification.id}
+                                    className={`rounded-2xl border p-4 ${
+                                        notification.is_read
+                                            ? 'border-slate-100 bg-slate-50'
+                                            : 'border-blue-100 bg-blue-50/70'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p className="font-semibold text-slate-900">
+                                                {notification.title}
+                                            </p>
+                                            <p className="mt-1 text-sm text-slate-600">
+                                                {notification.message}
+                                            </p>
+                                        </div>
+                                        {!notification.is_read && (
+                                            <button
+                                                onClick={() =>
+                                                    markNotificationRead(notification.id)
+                                                }
+                                                className="text-xs font-semibold text-blue-700"
+                                            >
+                                                Mark read
+                                            </button>
+                                        )}
                                     </div>
-                                    <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-700 w-14 sm:w-16 text-right">×{item.count} = +{item.points}</span>
+                                    <p className="mt-3 text-xs text-slate-400">
+                                        {new Date(notification.created_at).toLocaleString()}
+                                    </p>
                                 </div>
                             ))}
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Career Impact Cards */}
-            {approved > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="col-span-1 md:col-span-2 rounded-2xl p-6 relative overflow-hidden border border-slate-100 bg-gradient-to-br from-slate-900 to-slate-800 shadow-xl text-white">
-                        <div className="relative z-10">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <Award className="w-5 h-5 text-blue-400" />
-                                Career Impact Profile
-                            </h3>
-                            <p className="text-sm text-slate-300 mt-1 mb-4 max-w-md">
-                                Your verified activities demonstrate these core competencies valued by recruiters.
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {skillsEarned.length > 0 ? skillsEarned.map(skill => (
-                                    <div key={skill.name} className="bg-white/10 backdrop-blur px-3 py-1.5 rounded-full border border-white/20 text-xs font-bold text-white flex items-center gap-2 hover:bg-white/20 transition-colors">
-                                        <Sparkles className="w-3 h-3 text-yellow-300" />
-                                        {skill.name} <span className="bg-white/20 px-1.5 rounded-full text-[10px]">{skill.count}</span>
-                                    </div>
-                                )) : (
-                                    <span className="text-sm text-slate-400 italic">Complete more activities to unlock skill badges.</span>
-                                )}
+                <div className="space-y-6">
+                    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900">
+                            Verified Skill Stack
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Skills pulled from approved activities and verified result
+                            records.
+                        </p>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {studentSkills.length ? (
+                                studentSkills.map((skill) => (
+                                    <Badge key={skill} variant="outline">
+                                        {skill}
+                                    </Badge>
+                                ))
+                            ) : (
+                                <p className="text-sm text-slate-400">
+                                    Add skill tags to future submissions to improve
+                                    placement matching.
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-900">
+                            Placement Snapshot
+                        </h3>
+                        <div className="mt-4 space-y-3 text-sm text-slate-600">
+                            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                                <span>Current CGPA</span>
+                                <span className="font-semibold text-slate-900">
+                                    {cgpa || '0.00'}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                                <span>Rejected activities</span>
+                                <span className="font-semibold text-slate-900">
+                                    {rejectedActivities.length}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                                <span>Placement-ready openings</span>
+                                <span className="font-semibold text-slate-900">
+                                    {matchedOpenings.length}
+                                </span>
                             </div>
                         </div>
-                        <Briefcase className="absolute right-[-20px] bottom-[-20px] w-32 h-32 text-white/5 rotate-12" />
-                    </div>
-
-                    <div className="glass-card p-6 flex flex-col justify-center items-center shadow-lg">
-                        <div className="text-center">
-                            <div className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-slate-900 to-slate-600">{approved}</div>
-                            <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Verified Credits</div>
-                        </div>
-                        <div className="mt-4 w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ width: `${Math.min((approved / 10) * 100, 100)}%` }}></div>
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-2 text-center">Gap to Gold Level: <span className="text-white">{Math.max(0, 10 - approved)}</span> more</p>
                     </div>
                 </div>
-            )}
+            </div>
 
-            {/* Filter Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-2">
-                {['all', 'approved', 'pending', 'rejected'].map(filter => (
+                {['all', 'approved', 'pending', 'rejected'].map((filter) => (
                     <Button
                         key={filter}
-                        onClick={() => setStatusFilter(filter)}
                         variant="outline"
-                        className={`h-10 px-4 py-2 rounded-full text-sm font-medium transition-all ${statusFilter === filter
-                            ? 'bg-slate-900 text-white shadow-md border-slate-900'
-                            : 'border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 hover:border-slate-300'
-                            }`}
+                        onClick={() => setStatusFilter(filter)}
+                        className={`rounded-full px-4 ${
+                            statusFilter === filter
+                                ? 'border-slate-900 bg-slate-900 text-white'
+                                : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        }`}
                     >
                         {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                        <span className="ml-2 opacity-60 text-xs">
-                            {filter === 'all' ? myActivities.length : myActivities.filter(a => a.status === filter).length}
+                        <span className="ml-2 text-xs opacity-70">
+                            {filter === 'all'
+                                ? myActivities.length
+                                : myActivities.filter(
+                                      (activity) => activity.status === filter
+                                  ).length}
                         </span>
                     </Button>
                 ))}
             </div>
 
-            {/* List View */}
-            <div className="glass-panel border-white/5 overflow-hidden min-h-[400px]">
-                {filteredList.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center p-12 text-center h-64">
-                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 border border-white/10">
-                            <Clock className="w-8 h-8 text-gray-500" />
+            <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
+                {filteredActivities.length === 0 ? (
+                    <div className="flex h-64 flex-col items-center justify-center p-12 text-center">
+                        <div className="mb-4 rounded-full bg-slate-50 p-4">
+                            <Clock className="h-8 w-8 text-slate-400" />
                         </div>
-                        <h3 className="text-lg font-bold text-white">No records found</h3>
-                        <p className="text-slate-500 text-lg font-medium">
-                            {statusFilter === 'all' ? "You haven't submitted any activities yet. Start building your portfolio!" : `You have no ${statusFilter} activities.`}
+                        <h3 className="text-lg font-bold text-slate-900">
+                            No records found
+                        </h3>
+                        <p className="mt-2 text-sm text-slate-500">
+                            {statusFilter === 'all'
+                                ? 'Start by submitting an activity to build your portfolio.'
+                                : `You have no ${statusFilter} activities right now.`}
                         </p>
                         {statusFilter === 'all' && (
-                            <Button onClick={() => navigate('/student/submit')} variant="default" className="mt-4">
+                            <Button
+                                onClick={() => navigate('/student/submit')}
+                                className="mt-4 bg-slate-900 text-white hover:bg-slate-800"
+                            >
                                 Submit New Activity
                             </Button>
                         )}
                     </div>
                 ) : (
-                    <div className="divide-y divide-white/5">
-                        {filteredList.map((activity) => (
-                            <div key={activity.id} className="group p-5 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                    <FileText className="w-24 h-24 text-slate-900 rotate-12" />
-                                </div>
-                                <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                                    <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-                                        <div className={`p-2 sm:p-3 rounded-xl flex-shrink-0 ${activity.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                            activity.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                                            }`}>
-                                            {activity.status === 'approved' ? <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" /> :
-                                                activity.status === 'rejected' ? <XCircle className="w-5 h-5 sm:w-6 sm:h-6" /> : <Clock className="w-5 h-5 sm:w-6 sm:h-6" />}
+                    <div className="divide-y divide-slate-100">
+                        {filteredActivities.map((activity) => (
+                            <div key={activity.id} className="p-5">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div className="flex gap-4">
+                                        <div
+                                            className={`mt-1 rounded-2xl p-3 ${
+                                                activity.status === 'approved'
+                                                    ? 'bg-emerald-50 text-emerald-700'
+                                                    : activity.status === 'rejected'
+                                                    ? 'bg-red-50 text-red-700'
+                                                    : 'bg-amber-50 text-amber-700'
+                                            }`}
+                                        >
+                                            {activity.status === 'approved' ? (
+                                                <CheckCircle2 className="h-5 w-5" />
+                                            ) : activity.status === 'rejected' ? (
+                                                <XCircle className="h-5 w-5" />
+                                            ) : (
+                                                <Clock className="h-5 w-5" />
+                                            )}
                                         </div>
-                                        <div className="min-w-0">
-                                            <h3 className="font-bold text-slate-900 text-base sm:text-lg truncate">{activity.title}</h3>
-                                            <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-2 mt-1">
-                                                <span>{new Date(activity.date).toLocaleDateString()}</span>
+
+                                        <div>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h3 className="text-lg font-bold text-slate-900">
+                                                    {activity.title}
+                                                </h3>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`${
+                                                        activity.status === 'approved'
+                                                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                                            : activity.status === 'rejected'
+                                                            ? 'border-red-200 bg-red-50 text-red-700'
+                                                            : 'border-amber-200 bg-amber-50 text-amber-700'
+                                                    }`}
+                                                >
+                                                    {activity.status.toUpperCase()}
+                                                </Badge>
+                                            </div>
+                                            <p className="mt-1 text-sm text-slate-500">
+                                                {activity.category} •{' '}
+                                                {new Date(activity.date).toLocaleDateString()}
                                             </p>
+                                            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                                                {activity.description}
+                                            </p>
+
+                                            {activity.reviewer_comment && (
+                                                <div className="mt-4 flex items-start gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                                                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                                                    <p>
+                                                        <span className="font-semibold text-slate-900">
+                                                            Reviewer note:
+                                                        </span>{' '}
+                                                        {activity.reviewer_comment}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-0 ml-10 sm:ml-0 flex-shrink-0">
-                                        <Badge variant="outline" className={`sm:mb-2 text-[10px] sm:text-xs ${activity.status === 'approved' ? 'border-green-200 text-green-700 bg-green-50' :
-                                            activity.status === 'rejected' ? 'border-red-200 text-red-700 bg-red-50' : 'border-yellow-200 text-yellow-700 bg-yellow-50'
-                                            }`}>
-                                            {activity.status.toUpperCase()}
-                                        </Badge>
-                                        <Button variant="ghost" size="sm" className="text-xs h-7 text-slate-400 hover:text-slate-900 hover:bg-slate-100 flex items-center">
-                                            View Details <ChevronRight className="w-3 h-3 ml-1" />
+
+                                    <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => navigate('/student/placements')}
+                                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+                                        >
+                                            Placement Hub
+                                            <ChevronRight className="ml-1 h-3 w-3" />
                                         </Button>
+
+                                        {activity.status === 'rejected' && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    deleteRejectedActivity(activity.id)
+                                                }
+                                                className="border-red-200 text-red-700 hover:bg-red-50"
+                                            >
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                Delete
+                                            </Button>
+                                        )}
+
+                                        {activity.integrity_hash && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    window.open(
+                                                        `${window.location.origin}/verify/${activity.integrity_hash}`,
+                                                        '_blank'
+                                                    )
+                                                }
+                                            >
+                                                <FileText className="mr-2 h-4 w-4" />
+                                                Verify
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
-                                {activity.feedback && (
-                                    <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-700 flex items-start gap-2">
-                                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                                        <p><span className="font-bold">Feedback:</span> {activity.feedback}</p>
-                                    </div>
-                                )}
                             </div>
                         ))}
                     </div>

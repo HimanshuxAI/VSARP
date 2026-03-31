@@ -177,8 +177,8 @@ export default function AdminOverview() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-3 font-mono text-[10px] text-gray-400">
-                                        {activity.hash ? (
-                                            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{activity.hash.substring(0, 16)}...</span>
+                                        {activity.integrity_hash ? (
+                                            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{activity.integrity_hash.substring(0, 16)}...</span>
                                         ) : (
                                             <span className="opacity-20">PENDING_GENERATION...</span>
                                         )}

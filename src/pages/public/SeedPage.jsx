@@ -1,115 +1,153 @@
-import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { Button } from '../../components/ui/button';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import React from 'react';
+import { Badge } from '../../components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 
-const usersToCreate = [
-    { email: 'admin@vsarp.com', password: 'password123', role: 'student', name: 'Super Admin', dept: 'Administration' }, // Will override role via SQL
-    ...Array.from({ length: 5 }).map((_, i) => ({
-        email: `student${i + 1}@vsarp.com`,
-        password: 'password123',
-        role: 'student',
-        name: `Student ${i + 1}`,
-        student_id: `STU-2024-00${i + 1}`,
-        dept: 'Computer Science'
-    })),
-    ...Array.from({ length: 5 }).map((_, i) => ({
-        email: `faculty${i + 1}@vsarp.com`,
-        password: 'password123',
-        role: 'faculty',
-        name: `Faculty ${i + 1}`,
-        dept: 'Computer Science'
-    }))
+const DEMO_PASSWORD = 'password123';
+
+const adminAccount = {
+    email: 'admin@vsarp.com',
+    name: 'VSARP Administrator',
+    role: 'Admin',
+    department: 'Administration',
+};
+
+const demoStudents = [
+    {
+        email: 'riya.sharma@vsarp.com',
+        name: 'Riya Sharma',
+        studentId: 'CSE24017',
+        department: 'Computer Science',
+        skills: ['Python', 'SQL', 'Communication'],
+    },
+    {
+        email: 'arjun.nair@vsarp.com',
+        name: 'Arjun Nair',
+        studentId: 'IT24008',
+        department: 'Information Technology',
+        skills: ['JavaScript', 'Cloud', 'Problem Solving'],
+    },
+    {
+        email: 'meera.iyer@vsarp.com',
+        name: 'Meera Iyer',
+        studentId: 'ECE24011',
+        department: 'Electronics',
+        skills: ['Data Visualization', 'SQL', 'Leadership'],
+    },
+    {
+        email: 'kabir.singh@vsarp.com',
+        name: 'Kabir Singh',
+        studentId: 'CSE24021',
+        department: 'Computer Science',
+        skills: ['Python', 'JavaScript', 'Problem Solving'],
+    },
+    {
+        email: 'sana.khan@vsarp.com',
+        name: 'Sana Khan',
+        studentId: 'IT24019',
+        department: 'Information Technology',
+        skills: ['Communication', 'Cloud', 'Leadership'],
+    },
 ];
 
 export default function SeedPage() {
-    const [logs, setLogs] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    const addLog = (msg, type = 'info') => {
-        setLogs(prev => [...prev, { msg, type, id: Date.now() + Math.random() }]);
-    };
-
-    const runSeed = async () => {
-        setLoading(true);
-        setLogs([]);
-        addLog("Starting Seed Process...", 'info');
-        addLog("⚠️ NOTE: Ensure 'Confirm Email' is DISABLED in Supabase Auth Settings, or these users won't be able to login immediately.", 'warning');
-
-        for (const user of usersToCreate) {
-            addLog(`Creating ${user.email}...`, 'info');
-
-            // 1. Sign Up
-            const { data, error } = await supabase.auth.signUp({
-                email: user.email,
-                password: user.password,
-                options: {
-                    data: {
-                        full_name: user.name,
-                        role: user.role, // Admin role must be set via SQL later
-                        department: user.dept,
-                        student_id: user.student_id
-                    }
-                }
-            });
-
-            if (error) {
-                addLog(`Failed to create ${user.email}: ${error.message}`, 'error');
-            } else if (data.user) {
-                if (data.user.identities?.length === 0) {
-                    addLog(`User ${user.email} already exists.`, 'warning');
-                } else {
-                    addLog(`Created ${user.email} (ID: ${data.user.id.slice(0, 8)}...)`, 'success');
-                }
-            }
-
-            // 2. Sign Out immediately so we can create the next one
-            await supabase.auth.signOut();
-
-            // Small delay to prevent rate limiting
-            await new Promise(r => setTimeout(r, 500));
-        }
-
-        addLog("Seed Process Complete!", 'success');
-        setLoading(false);
-    };
-
     return (
-        <div className="min-h-screen bg-slate-50 p-8 font-mono">
-            <div className="max-w-2xl mx-auto space-y-6">
-                <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h1 className="text-2xl font-bold mb-4">Database Seeder</h1>
-                    <p className="text-slate-600 mb-6">
-                        This tool will create 11 users:
-                        <br />- 1 Admin (admin@vsarp.com)
-                        <br />- 5 Students (student1-5@vsarp.com)
-                        <br />- 5 Faculty (faculty1-5@vsarp.com)
-                        <br />
-                        <strong>Password for all:</strong> password123
+        <div className="min-h-screen bg-slate-50 px-4 py-12">
+            <div className="mx-auto max-w-5xl space-y-8">
+                <div className="space-y-3 text-center">
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">
+                        Demo Access
                     </p>
-
-                    <Button
-                        onClick={runSeed}
-                        disabled={loading}
-                        className="w-full bg-slate-900 text-white hover:bg-slate-800"
-                    >
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {loading ? 'Seeding...' : 'Start Seeding'}
-                    </Button>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                        Built-in Student Demo Accounts
+                    </h1>
+                    <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-600">
+                        Running <code className="rounded bg-slate-100 px-1.5 py-0.5">supabase/schema.sql</code>{' '}
+                        creates five Supabase-auth student accounts with sample results,
+                        activities, placement applications, notifications, and aptitude
+                        history.
+                    </p>
                 </div>
 
-                <div className="bg-slate-900 text-slate-200 p-6 rounded-xl h-[400px] overflow-y-auto text-sm space-y-2">
-                    {logs.map((log) => (
-                        <div key={log.id} className={`flex items-start gap-2 ${log.type === 'error' ? 'text-red-400' :
-                                log.type === 'success' ? 'text-green-400' :
-                                    log.type === 'warning' ? 'text-yellow-400' : 'text-slate-300'
-                            }`}>
-                            {log.type === 'success' && <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />}
-                            {log.type === 'error' && <XCircle className="w-4 h-4 mt-0.5 shrink-0" />}
-                            <span>{log.msg}</span>
+                <Card className="border-slate-200 shadow-sm">
+                    <CardHeader>
+                        <CardTitle className="text-xl text-slate-900">
+                            Shared Password
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="inline-flex rounded-xl border border-slate-200 bg-white px-4 py-3 font-mono text-sm font-semibold text-slate-900">
+                            {DEMO_PASSWORD}
                         </div>
+                        <p className="mt-3 text-sm text-slate-500">
+                            Use any email below with the shared password after the SQL
+                            file has been executed in Supabase.
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-slate-200 bg-slate-900 text-white shadow-sm">
+                    <CardHeader>
+                        <CardTitle className="text-xl">
+                            Admin Account
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-sm">
+                        <p className="font-semibold">{adminAccount.name}</p>
+                        <p className="font-mono text-slate-200">{adminAccount.email}</p>
+                        <p className="text-slate-300">
+                            Role: {adminAccount.role} · Department: {adminAccount.department}
+                        </p>
+                        <p className="text-slate-300">
+                            Login and open the User Approvals screen to activate newly
+                            registered accounts.
+                        </p>
+                    </CardContent>
+                </Card>
+
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {demoStudents.map((student) => (
+                        <Card
+                            key={student.email}
+                            className="border-slate-200 bg-white shadow-sm"
+                        >
+                            <CardHeader className="space-y-1">
+                                <CardTitle className="text-lg text-slate-900">
+                                    {student.name}
+                                </CardTitle>
+                                <p className="font-mono text-xs text-slate-500">
+                                    {student.email}
+                                </p>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-1 text-sm text-slate-600">
+                                    <p>
+                                        <span className="font-semibold text-slate-900">
+                                            Student ID:
+                                        </span>{' '}
+                                        {student.studentId}
+                                    </p>
+                                    <p>
+                                        <span className="font-semibold text-slate-900">
+                                            Department:
+                                        </span>{' '}
+                                        {student.department}
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                    {student.skills.map((skill) => (
+                                        <Badge
+                                            key={skill}
+                                            variant="secondary"
+                                            className="bg-slate-100 text-slate-700"
+                                        >
+                                            {skill}
+                                        </Badge>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
                     ))}
-                    {logs.length === 0 && <span className="text-slate-600 italic">Logs will appear here...</span>}
                 </div>
             </div>
         </div>

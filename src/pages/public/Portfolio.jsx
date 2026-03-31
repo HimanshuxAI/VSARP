@@ -1,13 +1,22 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { computeEmployabilityScore } from '../../lib/employabilityScore';
-import { Award, Star, CheckCircle2, BookOpen, Briefcase, Code2, Users, Globe } from 'lucide-react';
+import {
+    Award,
+    BookOpen,
+    Briefcase,
+    CheckCircle2,
+    Code2,
+    Globe,
+    Sparkles,
+    Users,
+} from 'lucide-react';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
+import { parseSkillInput } from '../../lib/placement';
 
 const OUTCOME_ICONS = {
     Technical: Code2,
     Research: BookOpen,
     Leadership: Users,
-    Sports: Star,
 };
 
 const CATEGORY_COLORS = {
@@ -18,161 +27,250 @@ const CATEGORY_COLORS = {
     'Soft Skills Test': 'bg-pink-50 text-pink-700 border-pink-200',
     Sports: 'bg-yellow-50 text-yellow-700 border-yellow-200',
     Leadership: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    default: 'bg-gray-50 text-gray-700 border-gray-200',
+    default: 'bg-slate-50 text-slate-700 border-slate-200',
 };
 
 export default function Portfolio() {
     const { studentId } = useParams();
+    const [loading, setLoading] = useState(true);
+    const [student, setStudent] = useState(null);
+    const [approvedActivities, setApprovedActivities] = useState([]);
+    const [verifiedResults, setVerifiedResults] = useState([]);
 
-    // Read all data from localStorage (public access, no auth required)
-    const allActivities = JSON.parse(localStorage.getItem('vsarp_activities') || '[]');
-    const allUsers = JSON.parse(localStorage.getItem('vsarp_users') || '[]');
+    useEffect(() => {
+        const loadPortfolio = async () => {
+            setLoading(true);
 
-    const student = allUsers.find(u => u.id === studentId);
-    const myActivities = allActivities.filter(a => a.student_id === studentId);
-    const approved = myActivities.filter(a => a.status === 'approved');
-    const { score, breakdown, level, levelColor } = computeEmployabilityScore(myActivities);
+            if (!isSupabaseConfigured) {
+                const users = JSON.parse(localStorage.getItem('vsarp_users') || '[]');
+                const activities = JSON.parse(localStorage.getItem('vsarp_activities') || '[]');
+                const results = JSON.parse(localStorage.getItem('vsarp_semester_results') || '[]');
 
-    const scorePercent = Math.min(score, 100);
+                setStudent(users.find((profile) => profile.id === studentId) || null);
+                setApprovedActivities(
+                    activities.filter(
+                        (activity) =>
+                            activity.student_id === studentId &&
+                            activity.status === 'approved'
+                    )
+                );
+                setVerifiedResults(
+                    results.filter(
+                        (result) =>
+                            result.student_id === studentId &&
+                            result.verification_status === 'verified'
+                    )
+                );
+                setLoading(false);
+                return;
+            }
 
-    // Score arc color
-    const arcColor = score >= 80 ? '#7c3aed' : score >= 60 ? '#16a34a' : score >= 40 ? '#ca8a04' : '#ea580c';
+            const [profileResult, activitiesResult, resultsResult] = await Promise.all([
+                supabase.from('profiles').select('*').eq('id', studentId).maybeSingle(),
+                supabase
+                    .from('activities')
+                    .select('*')
+                    .eq('student_id', studentId)
+                    .eq('status', 'approved')
+                    .order('date', { ascending: false }),
+                supabase
+                    .from('semester_results')
+                    .select('*')
+                    .eq('student_id', studentId)
+                    .eq('verification_status', 'verified')
+                    .order('created_at', { ascending: false }),
+            ]);
+
+            setStudent(profileResult.data || null);
+            setApprovedActivities(activitiesResult.data || []);
+            setVerifiedResults(resultsResult.data || []);
+            setLoading(false);
+        };
+
+        loadPortfolio();
+    }, [studentId]);
+
+    const verifiedSkills = useMemo(() => {
+        return [
+            ...new Set(
+                approvedActivities.flatMap((activity) =>
+                    parseSkillInput(activity.skill_tag)
+                )
+            ),
+        ];
+    }, [approvedActivities]);
+
+    if (loading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-slate-50">
+                <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 font-sans">
-            {/* Top banner */}
-            <div className="bg-slate-900 text-white py-3 px-4 sm:px-6 flex items-center justify-center gap-2 text-xs sm:text-sm">
-                <Globe className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                <span className="text-slate-400">Public Portfolio —</span>
-                <span className="font-semibold truncate">VSARP Verified Activity Record Platform</span>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+            <div className="flex items-center justify-center gap-2 bg-slate-900 px-4 py-3 text-xs text-white sm:text-sm">
+                <Globe className="h-4 w-4 text-blue-400" />
+                <span className="text-slate-400">Public Portfolio</span>
+                <span className="font-semibold">VSARP Verified Student Records</span>
             </div>
 
-            <div className="max-w-3xl mx-auto px-3 sm:px-4 py-6 sm:py-12 space-y-6 sm:space-y-8">
-
-                {/* Student Card */}
-                <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl border border-slate-100 p-5 sm:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-5 sm:gap-6">
-                    {/* Avatar */}
-                    <div className="flex-shrink-0 h-24 w-24 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center shadow-lg">
-                        <span className="text-3xl font-bold text-white">
-                            {student ? student.full_name?.charAt(0)?.toUpperCase() ?? '?' : '?'}
-                        </span>
-                    </div>
-                    <div className="flex-1 text-center sm:text-left">
-                        <h1 className="text-2xl font-bold text-slate-900">
-                            {student?.full_name || 'Student'}
-                        </h1>
-                        <p className="text-slate-500 font-medium mt-1">
-                            {student?.department || 'Department'} &middot; {student?.university || ''}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-1 font-mono">ID: {studentId?.substring(0, 8)}...</p>
-
-                        <div className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
-                                <CheckCircle2 className="w-3.5 h-3.5" />
-                                {approved.length} Verified Activities
-                            </span>
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${score >= 60 ? 'bg-green-50 text-green-700 border-green-200' : score >= 40 ? 'bg-yellow-50 text-yellow-700 border-yellow-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
-                                <Award className="w-3.5 h-3.5" />
-                                {level} Level
-                            </span>
+            <div className="mx-auto max-w-4xl space-y-8 px-4 py-10">
+                <div className="rounded-[28px] border border-slate-100 bg-white p-8 shadow-xl">
+                    <div className="flex flex-col gap-6 md:flex-row md:items-center">
+                        <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-slate-700 to-slate-900 text-3xl font-bold text-white">
+                            {student?.full_name?.charAt(0)?.toUpperCase() ||
+                                student?.name?.charAt(0)?.toUpperCase() ||
+                                '?'}
                         </div>
-                    </div>
 
-                    {/* Score Circle */}
-                    <div className="flex-shrink-0 flex flex-col items-center">
-                        <div className="relative w-28 h-28">
-                            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="#f1f5f9" strokeWidth="10" />
-                                <circle
-                                    cx="50" cy="50" r="40" fill="none"
-                                    stroke={arcColor} strokeWidth="10"
-                                    strokeDasharray={`${2 * Math.PI * 40}`}
-                                    strokeDashoffset={`${2 * Math.PI * 40 * (1 - scorePercent / 100)}`}
-                                    strokeLinecap="round"
-                                    style={{ transition: 'stroke-dashoffset 1s ease' }}
-                                />
-                            </svg>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                <span className="text-2xl font-bold text-slate-900">{score}</span>
-                                <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Score</span>
+                        <div className="flex-1">
+                            <h1 className="text-3xl font-bold text-slate-900">
+                                {student?.full_name || student?.name || 'Student'}
+                            </h1>
+                            <p className="mt-2 text-slate-500">
+                                {student?.department || 'Department'} • Verified student
+                                portfolio
+                            </p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                    <CheckCircle2 className="h-3.5 w-3.5" />
+                                    {approvedActivities.length} verified activities
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                    <Award className="h-3.5 w-3.5" />
+                                    {verifiedResults.length} verified results
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    {verifiedSkills.length} verified skills
+                                </span>
                             </div>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">Employability</p>
                     </div>
                 </div>
 
-                {/* Score Breakdown */}
-                {breakdown.length > 0 && (
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-                        <h2 className="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
-                            <Award className="w-4 h-4 text-purple-600" />
-                            Score Breakdown
-                        </h2>
-                        <div className="space-y-3">
-                            {breakdown.map(item => (
-                                <div key={item.category} className="flex items-center gap-2 sm:gap-3">
-                                    <span className="w-24 sm:w-36 text-xs sm:text-sm text-slate-600 font-medium truncate">{item.category}</span>
-                                    <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-                                            style={{ width: `${Math.min((item.points / 100) * 100, 100)}%` }}
-                                        />
+                <div className="rounded-[28px] border border-slate-100 bg-white p-6 shadow-sm">
+                    <h2 className="text-lg font-bold text-slate-900">
+                        Verified Skill Stack
+                    </h2>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        {verifiedSkills.length ? (
+                            verifiedSkills.map((skill) => (
+                                <span
+                                    key={skill}
+                                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700"
+                                >
+                                    {skill}
+                                </span>
+                            ))
+                        ) : (
+                            <p className="text-sm text-slate-400">
+                                No verified skill tags published yet.
+                            </p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="rounded-[28px] border border-slate-100 bg-white p-6 shadow-sm">
+                    <h2 className="flex items-center gap-2 text-lg font-bold text-slate-900">
+                        <BookOpen className="h-5 w-5 text-slate-500" />
+                        Verified Results ({verifiedResults.length})
+                    </h2>
+
+                    {verifiedResults.length === 0 ? (
+                        <div className="mt-4 rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-400">
+                            No verified results available.
+                        </div>
+                    ) : (
+                        <div className="mt-4 space-y-3">
+                            {verifiedResults.slice(0, 6).map((result) => (
+                                <div
+                                    key={result.id}
+                                    className="flex flex-col gap-2 rounded-2xl border border-slate-100 bg-slate-50/80 p-4 md:flex-row md:items-center md:justify-between"
+                                >
+                                    <div>
+                                        <p className="font-semibold text-slate-900">
+                                            {result.subject}
+                                        </p>
+                                        <p className="mt-1 text-sm text-slate-500">
+                                            Semester {result.semester} • {result.subject_code}
+                                        </p>
                                     </div>
-                                    <span className="text-xs font-mono font-bold text-slate-700 w-16 text-right">
-                                        +{item.points} pts
-                                    </span>
+                                    <div className="flex flex-wrap gap-2">
+                                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                                            {result.marks}/{result.max_marks}
+                                        </span>
+                                        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                                            Grade {result.grade}
+                                        </span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
-                {/* Verified Activities */}
                 <div>
-                    <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                        <Briefcase className="w-5 h-5 text-slate-600" />
-                        Verified Activities ({approved.length})
+                    <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-slate-900">
+                        <Briefcase className="h-5 w-5 text-slate-500" />
+                        Verified Activities ({approvedActivities.length})
                     </h2>
-                    {approved.length === 0 ? (
-                        <div className="bg-white rounded-2xl border border-slate-100 p-10 text-center">
-                            <p className="text-slate-400">No verified activities yet.</p>
+
+                    {approvedActivities.length === 0 ? (
+                        <div className="rounded-[28px] border border-slate-100 bg-white p-10 text-center text-slate-400 shadow-sm">
+                            No verified activities yet.
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {approved.map(act => {
-                                const colorClass = CATEGORY_COLORS[act.category] || CATEGORY_COLORS.default;
-                                const OutcomeIcon = OUTCOME_ICONS[act.outcome_type] || Code2;
+                            {approvedActivities.map((activity) => {
+                                const OutcomeIcon =
+                                    OUTCOME_ICONS[activity.outcome_type] || Code2;
+                                const colorClass =
+                                    CATEGORY_COLORS[activity.category] ||
+                                    CATEGORY_COLORS.default;
+
                                 return (
-                                    <div key={act.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-5 hover:shadow-md transition-shadow">
-                                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                                            <div className="flex items-start gap-3 flex-1">
-                                                <div className="p-2 bg-green-50 rounded-lg mt-0.5">
-                                                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                                    <div
+                                        key={activity.id}
+                                        className="rounded-[28px] border border-slate-100 bg-white p-5 shadow-sm"
+                                    >
+                                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                            <div className="flex gap-3">
+                                                <div className="rounded-xl bg-emerald-50 p-2.5">
+                                                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-slate-900">{act.title}</h3>
-                                                    <p className="text-sm text-slate-500 mt-1">{act.description}</p>
-                                                    <div className="flex flex-wrap gap-2 mt-2">
-                                                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold border ${colorClass}`}>
-                                                            {act.category}
+                                                    <h3 className="font-bold text-slate-900">
+                                                        {activity.title}
+                                                    </h3>
+                                                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                                                        {activity.description}
+                                                    </p>
+                                                    <div className="mt-3 flex flex-wrap gap-2">
+                                                        <span
+                                                            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${colorClass}`}
+                                                        >
+                                                            {activity.category}
                                                         </span>
-                                                        {act.outcome_type && (
-                                                            <span className="inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-semibold border bg-slate-50 text-slate-600 border-slate-200">
-                                                                <OutcomeIcon className="w-3 h-3" />
-                                                                {act.outcome_type}
+                                                        {activity.outcome_type && (
+                                                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                                                                <OutcomeIcon className="h-3 w-3" />
+                                                                {activity.outcome_type}
                                                             </span>
                                                         )}
-                                                        {act.skill_tag && (
-                                                            <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                                                {act.skill_tag}
+                                                        {activity.skill_tag && (
+                                                            <span className="rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700">
+                                                                {activity.skill_tag}
                                                             </span>
                                                         )}
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2 sm:text-right flex-shrink-0">
-                                                <p className="text-xs text-slate-400">{new Date(act.date).toLocaleDateString()}</p>
-                                                {act.academic_year && <p className="text-xs text-slate-400 mt-1">{act.academic_year}</p>}
+
+                                            <div className="text-xs text-slate-400">
+                                                {new Date(activity.date).toLocaleDateString()}
                                             </div>
                                         </div>
                                     </div>
@@ -180,13 +278,6 @@ export default function Portfolio() {
                             })}
                         </div>
                     )}
-                </div>
-
-                {/* Footer */}
-                <div className="text-center pt-4 pb-8">
-                    <p className="text-xs text-slate-400">
-                        Generated by <span className="font-bold text-slate-600">VSARP</span> · Verified Student Activity Record Platform
-                    </p>
                 </div>
             </div>
         </div>

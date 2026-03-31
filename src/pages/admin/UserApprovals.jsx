@@ -1,21 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../context/AuthContext';
-import { Check, X, User, Shield, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { isSupabaseConfigured, supabase } from '../../lib/supabase';
+import { Check, X, User, Shield } from 'lucide-react';
 
 export default function UserApprovals() {
-    const { user } = useAuth();
     const [pendingUsers, setPendingUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchPendingUsers();
-    }, []);
-
     const fetchPendingUsers = async () => {
         setLoading(true);
-        if (supabase.supabaseKey.startsWith('sb_publishable_')) {
+        if (!isSupabaseConfigured) {
             // Mock Fetch
             const allUsers = JSON.parse(localStorage.getItem('vsarp_users') || '[]');
             const pending = allUsers.filter(u => u.status === 'pending');
@@ -35,8 +28,12 @@ export default function UserApprovals() {
         setLoading(false);
     };
 
+    useEffect(() => {
+        fetchPendingUsers();
+    }, []);
+
     const handleApproval = async (userId, approved) => {
-        if (supabase.supabaseKey.startsWith('sb_publishable_')) {
+        if (!isSupabaseConfigured) {
             const allUsers = JSON.parse(localStorage.getItem('vsarp_users') || '[]');
             const updatedUsers = allUsers.map(u => {
                 if (u.id === userId) {
@@ -80,10 +77,8 @@ export default function UserApprovals() {
             ) : (
                 <div className="grid gap-4">
                     {pendingUsers.map((req) => (
-                        <motion.div
+                        <div
                             key={req.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
                             className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between"
                         >
                             <div className="flex items-center gap-4">
@@ -91,7 +86,7 @@ export default function UserApprovals() {
                                     <User className="w-6 h-6 text-slate-500" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-900">{req.name}</h3>
+                                    <h3 className="font-bold text-slate-900">{req.full_name || req.name}</h3>
                                     <div className="flex items-center gap-3 text-sm text-slate-500 mt-0.5">
                                         <span className="bg-slate-100 px-2 py-0.5 rounded text-xs font-semibold uppercase">{req.role}</span>
                                         <span>&bull;</span>
@@ -125,7 +120,7 @@ export default function UserApprovals() {
                                     Approve
                                 </button>
                             </div>
-                        </motion.div>
+                        </div>
                     ))}
                 </div>
             )}

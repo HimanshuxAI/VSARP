@@ -1,583 +1,1087 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 import { useAuth } from './AuthContext';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import {
+    buildDefaultAptitudeQuestions,
+    createResultRecord,
+    generateVerificationHash,
+    parseSkillInput,
+} from '../lib/placement';
 
 const DataContext = createContext(null);
 
+const DEFAULT_CATEGORIES = [
+    'Academic',
+    'Sports',
+    'Cultural',
+    'Social Service',
+    'Leadership',
+    'Internship',
+    'Certification',
+    'Hackathon',
+    'Research Paper',
+    'Soft Skills Test',
+];
+
+const STORAGE_KEYS = {
+    activities: 'vsarp_activities',
+    researchPapers: 'vsarp_research_papers',
+    auditLogs: 'vsarp_logs',
+    courses: 'vsarp_courses',
+    semesterResults: 'vsarp_semester_results',
+    placementDrives: 'vsarp_placement_drives',
+    placementApplications: 'vsarp_placement_applications',
+    placementNotifications: 'vsarp_placement_notifications',
+    aptitudeTests: 'vsarp_aptitude_tests',
+    aptitudeAttempts: 'vsarp_aptitude_attempts',
+    users: 'vsarp_users',
+};
+
+function readStorage(key, fallback = []) {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+}
+
+function writeStorage(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+}
+
+function createNotification({
+    profileId,
+    driveId = null,
+    title,
+    message,
+    notificationType = 'placement_drive',
+}) {
+    return {
+        id: crypto.randomUUID(),
+        profile_id: profileId,
+        drive_id: driveId,
+        title,
+        message,
+        notification_type: notificationType,
+        is_read: false,
+        created_at: new Date().toISOString(),
+    };
+}
+
 export const DataProvider = ({ children }) => {
     const { user } = useAuth();
-    const [activities, setActivities] = useState([]);
-    const [categories, setCategories] = useState(['Academic', 'Sports', 'Cultural', 'Social Service', 'Leadership']);
-    const [auditLog, setAuditLog] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const isMockMode = !isSupabaseConfigured;
 
+    const [activities, setActivities] = useState([]);
+    const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+    const [auditLog, setAuditLog] = useState([]);
     const [researchPapers, setResearchPapers] = useState([]);
     const [courses, setCourses] = useState([]);
     const [semesterResults, setSemesterResults] = useState([]);
     const [placementDrives, setPlacementDrives] = useState([]);
+    const [placementApplications, setPlacementApplications] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+    const [aptitudeTests, setAptitudeTests] = useState([]);
+    const [aptitudeAttempts, setAptitudeAttempts] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const isMockMode = supabase.supabaseKey.startsWith('sb_publishable_');
+    const resetState = useCallback(() => {
+        setActivities([]);
+        setResearchPapers([]);
+        setAuditLog([]);
+        setCourses([]);
+        setSemesterResults([]);
+        setPlacementDrives([]);
+        setPlacementApplications([]);
+        setNotifications([]);
+        setAptitudeTests([]);
+        setAptitudeAttempts([]);
+        setUsers([]);
+        setCategories(DEFAULT_CATEGORIES);
+    }, []);
 
-    useEffect(() => {
-        if (user) {
-            fetchData();
-        } else {
-            setActivities([]);
-            setResearchPapers([]);
-            setAuditLog([]);
-            setCourses([]);
-            setSemesterResults([]);
-            setPlacementDrives([]);
-        }
-    }, [user]);
+    const logAction = useCallback(
+        async (actorId, role, actionType, recordId, details) => {
+            const newLog = {
+                id: crypto.randomUUID(),
+                actor_id: actorId,
+                role,
+                action_type: actionType,
+                record_id: recordId,
+                details,
+                timestamp: new Date().toISOString(),
+            };
 
-    const fetchData = async () => {
-        setLoading(true);
+            if (isMockMode) {
+                const nextLogs = [newLog, ...readStorage(STORAGE_KEYS.auditLogs)];
+                writeStorage(STORAGE_KEYS.auditLogs, nextLogs);
+                setAuditLog(nextLogs);
+                return;
+            }
 
-        if (isMockMode) {
-            // MOCK FETCH
-            const localActivities = JSON.parse(localStorage.getItem('vsarp_activities') || '[]');
-            const localPapers = JSON.parse(localStorage.getItem('vsarp_research_papers') || '[]');
-            const localLogs = JSON.parse(localStorage.getItem('vsarp_logs') || '[]');
-            const localCourses = JSON.parse(localStorage.getItem('vsarp_courses') || '[]');
-            const localResults = JSON.parse(localStorage.getItem('vsarp_semester_results') || '[]');
-            const localDrives = JSON.parse(localStorage.getItem('vsarp_placement_drives') || '[]');
-            setActivities(localActivities);
-            setResearchPapers(localPapers);
-            setAuditLog(localLogs);
-            setCourses(localCourses);
-            setSemesterResults(localResults);
-            setPlacementDrives(localDrives);
+            await supabase.from('audit_logs').insert(newLog);
+        },
+        [isMockMode]
+    );
+
+    const fetchData = useCallback(async () => {
+        if (!user) {
+            resetState();
             setLoading(false);
             return;
         }
 
-        // REAL FETCH
-        const { data: catData } = await supabase.from('categories').select('name');
-        if (catData && catData.length > 0) setCategories(catData.map(c => c.name));
+        setLoading(true);
 
-        const { data: actData } = await supabase
-            .from('activities')
-            .select('*')
-            .order('submitted_at', { ascending: false });
+        if (isMockMode) {
+            setActivities(readStorage(STORAGE_KEYS.activities));
+            setResearchPapers(readStorage(STORAGE_KEYS.researchPapers));
+            setAuditLog(readStorage(STORAGE_KEYS.auditLogs));
+            setCourses(readStorage(STORAGE_KEYS.courses));
+            setSemesterResults(readStorage(STORAGE_KEYS.semesterResults));
+            setPlacementDrives(readStorage(STORAGE_KEYS.placementDrives));
+            setPlacementApplications(readStorage(STORAGE_KEYS.placementApplications));
+            setNotifications(readStorage(STORAGE_KEYS.placementNotifications));
+            setAptitudeTests(readStorage(STORAGE_KEYS.aptitudeTests));
+            setAptitudeAttempts(readStorage(STORAGE_KEYS.aptitudeAttempts));
+            setUsers(readStorage(STORAGE_KEYS.users));
+            setLoading(false);
+            return;
+        }
 
-        if (actData) setActivities(actData);
+        const canViewAllUsers = ['admin', 'faculty', 'hod', 'placement_cell'].includes(
+            user.role
+        );
+        const shouldLoadAudit = user.role === 'admin';
 
-        const { data: paperData } = await supabase
-            .from('research_papers')
-            .select('*')
-            .order('publication_date', { ascending: false });
-
-        if (paperData) setResearchPapers(paperData);
-
-        if (user?.role === 'admin') {
-            const { data: logData } = await supabase
-                .from('audit_logs')
+        const queryResults = await Promise.all([
+            supabase.from('categories').select('name').order('name'),
+            supabase.from('activities').select('*').order('submitted_at', { ascending: false }),
+            supabase
+                .from('research_papers')
                 .select('*')
-                .order('timestamp', { ascending: false });
-            if (logData) setAuditLog(logData);
-        }
+                .order('publication_date', { ascending: false }),
+            supabase.from('courses').select('*').order('created_at', { ascending: false }),
+            supabase
+                .from('semester_results')
+                .select('*')
+                .order('created_at', { ascending: false }),
+            supabase
+                .from('placement_drives')
+                .select('*')
+                .order('drive_date', { ascending: true }),
+            supabase
+                .from('placement_applications')
+                .select('*')
+                .order('applied_at', { ascending: false }),
+            supabase
+                .from('placement_notifications')
+                .select('*')
+                .order('created_at', { ascending: false }),
+            supabase.from('aptitude_tests').select('*').order('created_at', { ascending: false }),
+            supabase
+                .from('aptitude_attempts')
+                .select('*')
+                .order('submitted_at', { ascending: false }),
+            canViewAllUsers
+                ? supabase.from('profiles').select('*').order('created_at', { ascending: false })
+                : supabase.from('profiles').select('*').eq('id', user.id),
+            shouldLoadAudit
+                ? supabase.from('audit_logs').select('*').order('timestamp', { ascending: false })
+                : Promise.resolve({ data: [] }),
+        ]);
+
+        const [
+            categoriesResult,
+            activitiesResult,
+            papersResult,
+            coursesResult,
+            resultsResult,
+            drivesResult,
+            applicationsResult,
+            notificationsResult,
+            testsResult,
+            attemptsResult,
+            usersResult,
+            auditResult,
+        ] = queryResults;
+
+        setCategories(
+            categoriesResult.data?.length
+                ? categoriesResult.data.map((item) => item.name)
+                : DEFAULT_CATEGORIES
+        );
+        setActivities(activitiesResult.data || []);
+        setResearchPapers(papersResult.data || []);
+        setCourses(coursesResult.data || []);
+        setSemesterResults(resultsResult.data || []);
+        setPlacementDrives(drivesResult.data || []);
+        setPlacementApplications(applicationsResult.data || []);
+        setNotifications(notificationsResult.data || []);
+        setAptitudeTests(testsResult.data || []);
+        setAptitudeAttempts(attemptsResult.data || []);
+        setUsers(usersResult.data || []);
+        setAuditLog(auditResult.data || []);
         setLoading(false);
-    };
+    }, [isMockMode, resetState, user]);
 
-    // Simple string hash for demo integrity
-    const generateIntegrityHash = (activity, approverId, timestamp) => {
-        const dataString = `${activity.id}|${activity.student_id}|${activity.title}|${approverId}|${timestamp}`;
-        let hash = 0;
-        for (let i = 0; i < dataString.length; i++) {
-            const char = dataString.charCodeAt(i);
-            hash = ((hash << 5) - hash) + char;
-            hash = hash & hash;
-        }
-        return Math.abs(hash).toString(16) + "-" + Math.random().toString(36).substring(2, 8);
-    };
-
-    const addActivity = async (activity) => {
-        const newActivity = {
-            id: isMockMode ? crypto.randomUUID() : undefined,
-            student_id: user.id,
-            student_name: user.name,
-            student_reg_no: user.student_id,
-            department: user.department || activity.department || 'General',
-            title: activity.title,
-            category: activity.category,
-            outcome_type: activity.outcome_type || 'Technical',
-            skill_tag: activity.skill_tag || '',
-            academic_year: activity.academic_year || '2024-25',
-            semester: activity.semester || '1',
-            description: activity.description,
-            date: activity.date,
-            proof_url: activity.proof_url,
-            status: 'pending',
-            submitted_at: new Date().toISOString()
-        };
-
-        if (isMockMode) {
-            const updated = [newActivity, ...activities];
-            setActivities(updated);
-            localStorage.setItem('vsarp_activities', JSON.stringify(updated));
-            logAction(user.id, user.role, 'SUBMISSION', newActivity.id, `Submitted: ${activity.title}`);
-            return true;
-        }
-
-        const { data, error } = await supabase.from('activities').insert({
-            ...newActivity,
-            student_id: user.id
-        }).select().single();
-
-        if (error) {
-            console.error("Supabase Insert Error:", error);
-            alert(`Submission Failed: ${error.message} (Code: ${error.code})`);
-            return false;
-        }
-
-        setActivities([data, ...activities]);
-        await logAction(user.id, user.role, 'SUBMISSION', data.id, `Submitted: ${activity.title}`);
-        return true;
-    };
-
-    const addResearchPaper = async (paper) => {
-        const newPaper = {
-            id: isMockMode ? crypto.randomUUID() : undefined,
-            faculty_id: user.id,
-            faculty_name: user.name,
-            title: paper.title,
-            abstract: paper.abstract,
-            publication_date: paper.publication_date,
-            journal_conference: paper.journal_conference,
-            url: paper.url,
-            created_at: new Date().toISOString()
-        };
-
-        if (isMockMode) {
-            const updated = [newPaper, ...researchPapers];
-            setResearchPapers(updated);
-            localStorage.setItem('vsarp_research_papers', JSON.stringify(updated));
-            logAction(user.id, user.role, 'PUBLISH', newPaper.id, `Published Paper: ${paper.title}`);
-            return true;
-        }
-
-        const { data, error } = await supabase.from('research_papers').insert(newPaper).select().single();
-
-        if (error) {
-            console.error("Supabase Insert Error:", error);
-            alert(`Publication Failed: ${error.message}`);
-            return false;
-        }
-
-        setResearchPapers([data, ...researchPapers]);
-        await logAction(user.id, user.role, 'PUBLISH', data.id, `Published Paper: ${paper.title}`);
-        return true;
-    };
-
-    const updateStatus = async (id, status, comment, reviewerName, reviewerId) => {
-        let target = activities.find(a => a.id === id);
-        if (!target) return;
-
-        const approvedAt = status === 'approved' ? new Date().toISOString() : null;
-        const hash = status === 'approved' ? generateIntegrityHash(target, reviewerId, approvedAt) : null;
-
-        if (isMockMode) {
-            const updatedActivities = activities.map(a => {
-                if (a.id === id) {
-                    return {
-                        ...a,
-                        status,
-                        reviewer_comment: comment,
-                        approved_by: reviewerName,
-                        approved_at: approvedAt,
-                        integrity_hash: hash
-                    };
-                }
-                return a;
-            });
-            setActivities(updatedActivities);
-            localStorage.setItem('vsarp_activities', JSON.stringify(updatedActivities));
-            logAction(reviewerId, 'faculty', status.toUpperCase(), id, `Status changed to ${status}`);
-            return;
-        }
-
-        const { error } = await supabase.from('activities').update({
-            status,
-            reviewer_comment: comment,
-            approved_by: reviewerName,
-            approved_at: approvedAt,
-            integrity_hash: hash
-        }).eq('id', id);
-
-        if (error) {
-            alert("Update failed");
-            return;
-        }
-
+    useEffect(() => {
         fetchData();
-        logAction(reviewerId, 'faculty', status.toUpperCase(), id, `Status changed to ${status}`);
-    };
+    }, [fetchData]);
 
-    // HOD Level-2 verification
-    const hodVerifyActivity = (id, status, comment, hodName, hodId) => {
-        const updatedActivities = activities.map(a => {
-            if (a.id === id) {
-                return {
-                    ...a,
-                    hod_status: status,
-                    hod_comment: comment,
-                    hod_verified_by: hodName,
-                    hod_verified_at: new Date().toISOString()
-                };
-            }
-            return a;
-        });
-        setActivities(updatedActivities);
-        localStorage.setItem('vsarp_activities', JSON.stringify(updatedActivities));
-        logAction(hodId, 'hod', `HOD_${status.toUpperCase()}`, id, `HOD ${status}: ${comment}`);
-    };
+    const getAllUsers = useCallback(() => users, [users]);
 
-    const addCategory = async (category, adminId) => {
-        if (!categories.includes(category)) {
+    const addActivity = useCallback(
+        async (activity) => {
+            const newActivity = {
+                id: crypto.randomUUID(),
+                student_id: user.id,
+                student_name: user.name,
+                student_reg_no: user.student_id,
+                department: user.department || activity.department || 'General',
+                title: activity.title,
+                category: activity.category,
+                outcome_type: activity.outcome_type || 'Technical',
+                skill_tag: activity.skill_tag || '',
+                academic_year: activity.academic_year || '2025-26',
+                semester: activity.semester || '1',
+                description: activity.description,
+                date: activity.date,
+                proof_url: activity.proof_url,
+                status: 'pending',
+                submitted_at: new Date().toISOString(),
+            };
+
             if (isMockMode) {
-                setCategories([...categories, category]);
-                logAction(adminId, 'admin', 'CONFIG_CHANGE', null, `Added category: ${category}`);
+                const nextActivities = [newActivity, ...activities];
+                writeStorage(STORAGE_KEYS.activities, nextActivities);
+                setActivities(nextActivities);
+                await logAction(user.id, user.role, 'SUBMISSION', newActivity.id, `Submitted: ${activity.title}`);
+                return true;
+            }
+
+            const { data, error } = await supabase
+                .from('activities')
+                .insert(newActivity)
+                .select()
+                .single();
+
+            if (error) {
+                alert(`Submission failed: ${error.message}`);
+                return false;
+            }
+
+            setActivities((current) => [data, ...current]);
+            await logAction(user.id, user.role, 'SUBMISSION', data.id, `Submitted: ${activity.title}`);
+            return true;
+        },
+        [activities, isMockMode, logAction, user]
+    );
+
+    const deleteRejectedActivity = useCallback(
+        async (activityId) => {
+            const targetActivity = activities.find((activity) => activity.id === activityId);
+
+            if (!targetActivity || targetActivity.status !== 'rejected') {
+                return false;
+            }
+
+            if (isMockMode) {
+                const nextActivities = activities.filter((activity) => activity.id !== activityId);
+                writeStorage(STORAGE_KEYS.activities, nextActivities);
+                setActivities(nextActivities);
+                await logAction(user.id, user.role, 'DELETE_REJECTED_ACTIVITY', activityId, `Deleted rejected activity: ${targetActivity.title}`);
+                return true;
+            }
+
+            const { error } = await supabase.from('activities').delete().eq('id', activityId);
+
+            if (error) {
+                alert(`Delete failed: ${error.message}`);
+                return false;
+            }
+
+            setActivities((current) => current.filter((activity) => activity.id !== activityId));
+            await logAction(user.id, user.role, 'DELETE_REJECTED_ACTIVITY', activityId, `Deleted rejected activity: ${targetActivity.title}`);
+            return true;
+        },
+        [activities, isMockMode, logAction, user]
+    );
+
+    const addResearchPaper = useCallback(
+        async (paper) => {
+            const newPaper = {
+                id: crypto.randomUUID(),
+                faculty_id: user.id,
+                faculty_name: user.name,
+                title: paper.title,
+                abstract: paper.abstract,
+                publication_date: paper.publication_date,
+                journal_conference: paper.journal_conference,
+                url: paper.url,
+                created_at: new Date().toISOString(),
+            };
+
+            if (isMockMode) {
+                const nextPapers = [newPaper, ...researchPapers];
+                writeStorage(STORAGE_KEYS.researchPapers, nextPapers);
+                setResearchPapers(nextPapers);
+                await logAction(user.id, user.role, 'PUBLISH', newPaper.id, `Published paper: ${paper.title}`);
+                return true;
+            }
+
+            const { data, error } = await supabase
+                .from('research_papers')
+                .insert(newPaper)
+                .select()
+                .single();
+
+            if (error) {
+                alert(`Publication failed: ${error.message}`);
+                return false;
+            }
+
+            setResearchPapers((current) => [data, ...current]);
+            await logAction(user.id, user.role, 'PUBLISH', data.id, `Published paper: ${paper.title}`);
+            return true;
+        },
+        [isMockMode, logAction, researchPapers, user]
+    );
+
+    const updateStatus = useCallback(
+        async (id, status, comment = '', reviewerName = user?.name, reviewerId = user?.id) => {
+            const target = activities.find((activity) => activity.id === id);
+
+            if (!target) {
+                return;
+            }
+
+            const approvedAt = status === 'approved' ? new Date().toISOString() : null;
+            const integrityHash =
+                status === 'approved' ? generateVerificationHash('activity') : null;
+
+            const updates = {
+                status,
+                reviewer_comment: comment,
+                approved_by: reviewerName,
+                approved_at: approvedAt,
+                integrity_hash: integrityHash,
+            };
+
+            if (isMockMode) {
+                const nextActivities = activities.map((activity) =>
+                    activity.id === id ? { ...activity, ...updates } : activity
+                );
+                writeStorage(STORAGE_KEYS.activities, nextActivities);
+                setActivities(nextActivities);
+
+                const nextNotifications = [
+                    createNotification({
+                        profileId: target.student_id,
+                        title:
+                            status === 'approved'
+                                ? 'Activity approved'
+                                : 'Activity needs resubmission',
+                        message:
+                            status === 'approved'
+                                ? `${target.title} was approved and is now verifiable.`
+                                : `${target.title} was rejected. Review the faculty note and delete or resubmit it.`,
+                        notificationType: 'activity_review',
+                    }),
+                    ...readStorage(STORAGE_KEYS.placementNotifications),
+                ];
+
+                writeStorage(STORAGE_KEYS.placementNotifications, nextNotifications);
+                setNotifications(nextNotifications);
+
+                await logAction(reviewerId, user?.role || 'faculty', status.toUpperCase(), id, `Status changed to ${status}`);
+                return;
+            }
+
+            const { error } = await supabase.from('activities').update(updates).eq('id', id);
+
+            if (error) {
+                alert(`Update failed: ${error.message}`);
+                return;
+            }
+
+            await supabase.from('placement_notifications').insert({
+                profile_id: target.student_id,
+                title: status === 'approved' ? 'Activity approved' : 'Activity needs attention',
+                message:
+                    status === 'approved'
+                        ? `${target.title} was approved and added to your verified portfolio.`
+                        : `${target.title} was rejected. Check the faculty comment and either delete or resubmit it.`,
+                notification_type: 'activity_review',
+                drive_id: null,
+            });
+
+            await fetchData();
+            await logAction(reviewerId, user?.role || 'faculty', status.toUpperCase(), id, `Status changed to ${status}`);
+        },
+        [activities, fetchData, isMockMode, logAction, user]
+    );
+
+    const addCategory = useCallback(
+        async (category, adminId) => {
+            if (!category || categories.includes(category)) {
+                return;
+            }
+
+            if (isMockMode) {
+                const nextCategories = [...categories, category];
+                setCategories(nextCategories);
+                await logAction(adminId, 'admin', 'CONFIG_CHANGE', null, `Added category: ${category}`);
                 return;
             }
 
             const { error } = await supabase.from('categories').insert({ name: category });
+
             if (!error) {
-                setCategories([...categories, category]);
-                logAction(adminId, 'admin', 'CONFIG_CHANGE', null, `Added category: ${category}`);
+                setCategories((current) => [...current, category]);
+                await logAction(adminId, 'admin', 'CONFIG_CHANGE', null, `Added category: ${category}`);
             }
-        }
-    };
+        },
+        [categories, isMockMode, logAction]
+    );
 
-    // Course enrollment
-    const addCourse = (course) => {
-        const newCourse = {
-            id: crypto.randomUUID(),
-            student_id: user.id,
-            course_name: course.course_name,
-            course_code: course.course_code,
-            credits: Number(course.credits),
-            semester: course.semester,
-            status: course.status || 'enrolled',
-            grade: course.grade || null,
-            created_at: new Date().toISOString()
-        };
-        const updated = [newCourse, ...courses];
-        setCourses(updated);
-        localStorage.setItem('vsarp_courses', JSON.stringify(updated));
-        return true;
-    };
+    const addCourse = useCallback(
+        async (course) => {
+            const newCourse = {
+                id: crypto.randomUUID(),
+                student_id: user.id,
+                course_name: course.course_name,
+                course_code: course.course_code,
+                credits: Number(course.credits),
+                semester: course.semester,
+                status: course.status || 'enrolled',
+                grade: course.grade || null,
+                created_at: new Date().toISOString(),
+            };
 
-    // Semester results
-    const addSemesterResult = (result) => {
-        const newResult = {
-            id: crypto.randomUUID(),
-            student_id: user.id,
-            semester: result.semester,
-            subject: result.subject,
-            subject_code: result.subject_code,
-            credits: Number(result.credits),
-            marks: Number(result.marks),
-            max_marks: Number(result.max_marks) || 100,
-            grade: result.grade,
-            grade_points: Number(result.grade_points),
-            created_at: new Date().toISOString()
-        };
-        const updated = [newResult, ...semesterResults];
-        setSemesterResults(updated);
-        localStorage.setItem('vsarp_semester_results', JSON.stringify(updated));
-        return true;
-    };
+            if (isMockMode) {
+                const nextCourses = [newCourse, ...courses];
+                writeStorage(STORAGE_KEYS.courses, nextCourses);
+                setCourses(nextCourses);
+                return true;
+            }
 
-    // Placement drives
-    const addPlacementDrive = (drive) => {
-        const newDrive = {
-            id: crypto.randomUUID(),
-            company_name: drive.company_name,
-            role_offered: drive.role_offered,
-            package_lpa: drive.package_lpa,
-            drive_date: drive.drive_date,
-            eligibility_cgpa: drive.eligibility_cgpa || 0,
-            eligible_departments: drive.eligible_departments || [],
-            status: drive.status || 'upcoming',
-            description: drive.description || '',
-            registered_students: [],
-            created_by: user.id,
-            created_at: new Date().toISOString()
-        };
-        const updated = [newDrive, ...placementDrives];
-        setPlacementDrives(updated);
-        localStorage.setItem('vsarp_placement_drives', JSON.stringify(updated));
-        logAction(user.id, user.role, 'DRIVE_CREATED', newDrive.id, `Created drive: ${drive.company_name}`);
-        return true;
-    };
+            const { data, error } = await supabase
+                .from('courses')
+                .insert(newCourse)
+                .select()
+                .single();
 
-    const updatePlacementDrive = (id, updates) => {
-        const updated = placementDrives.map(d => d.id === id ? { ...d, ...updates } : d);
-        setPlacementDrives(updated);
-        localStorage.setItem('vsarp_placement_drives', JSON.stringify(updated));
-    };
+            if (error) {
+                alert(`Course save failed: ${error.message}`);
+                return false;
+            }
 
-    const logAction = async (actorId, role, actionType, recordId, details) => {
-        const newLog = {
-            id: isMockMode ? crypto.randomUUID() : undefined,
-            actor_id: actorId,
-            role,
-            action_type: actionType,
-            record_id: recordId,
-            details,
-            timestamp: new Date().toISOString()
-        };
+            setCourses((current) => [data, ...current]);
+            return true;
+        },
+        [courses, isMockMode, user]
+    );
 
-        if (isMockMode) {
-            setAuditLog(prev => [newLog, ...prev]);
-            localStorage.setItem('vsarp_logs', JSON.stringify([newLog, ...(JSON.parse(localStorage.getItem('vsarp_logs') || '[]'))]));
+    const addSemesterResult = useCallback(
+        async (result) => {
+            const newResult = {
+                id: crypto.randomUUID(),
+                ...createResultRecord(user, result),
+            };
+
+            if (isMockMode) {
+                const nextResults = [newResult, ...semesterResults];
+                writeStorage(STORAGE_KEYS.semesterResults, nextResults);
+                setSemesterResults(nextResults);
+                return true;
+            }
+
+            const { data, error } = await supabase
+                .from('semester_results')
+                .insert(newResult)
+                .select()
+                .single();
+
+            if (error) {
+                alert(`Result save failed: ${error.message}`);
+                return false;
+            }
+
+            setSemesterResults((current) => [data, ...current]);
+            return true;
+        },
+        [isMockMode, semesterResults, user]
+    );
+
+    const addPlacementDrive = useCallback(
+        async (drive) => {
+            const requiredSkills = parseSkillInput(drive.required_skills);
+            const newDrive = {
+                id: crypto.randomUUID(),
+                company_name: drive.company_name,
+                role_offered: drive.role_offered,
+                package_lpa: Number(drive.package_lpa),
+                drive_date: drive.drive_date,
+                application_deadline: drive.application_deadline || drive.drive_date,
+                eligibility_cgpa: Number(drive.eligibility_cgpa || 0),
+                eligible_departments: drive.eligible_departments || [],
+                required_skills: requiredSkills,
+                openings: Number(drive.openings || 1),
+                status: drive.status || 'upcoming',
+                description: drive.description || '',
+                created_by: user.id,
+                created_at: new Date().toISOString(),
+            };
+
+            const defaultTest = {
+                id: crypto.randomUUID(),
+                drive_id: newDrive.id,
+                title: `${newDrive.company_name} Aptitude Round`,
+                company_name: newDrive.company_name,
+                description: `Practice test for ${newDrive.role_offered}`,
+                duration_minutes: 30,
+                passing_score: 60,
+                questions: buildDefaultAptitudeQuestions(requiredSkills, newDrive.company_name),
+                created_by: user.id,
+                created_at: new Date().toISOString(),
+            };
+
+            if (isMockMode) {
+                const nextDrives = [newDrive, ...placementDrives];
+                const nextTests = [defaultTest, ...aptitudeTests];
+                const studentUsers = readStorage(STORAGE_KEYS.users).filter(
+                    (profile) => profile.role === 'student'
+                );
+                const generatedNotifications = studentUsers.map((studentProfile) =>
+                    createNotification({
+                        profileId: studentProfile.id,
+                        driveId: newDrive.id,
+                        title: `${newDrive.company_name} drive is live`,
+                        message: `${newDrive.role_offered} applications are now open. Check eligibility and apply before the deadline.`,
+                    })
+                );
+
+                writeStorage(STORAGE_KEYS.placementDrives, nextDrives);
+                writeStorage(STORAGE_KEYS.aptitudeTests, nextTests);
+                writeStorage(STORAGE_KEYS.placementNotifications, [
+                    ...generatedNotifications,
+                    ...readStorage(STORAGE_KEYS.placementNotifications),
+                ]);
+
+                setPlacementDrives(nextDrives);
+                setAptitudeTests(nextTests);
+                setNotifications(readStorage(STORAGE_KEYS.placementNotifications));
+                await logAction(user.id, user.role, 'DRIVE_CREATED', newDrive.id, `Created drive: ${newDrive.company_name}`);
+                return true;
+            }
+
+            const { data: driveData, error: driveError } = await supabase
+                .from('placement_drives')
+                .insert(newDrive)
+                .select()
+                .single();
+
+            if (driveError) {
+                alert(`Drive creation failed: ${driveError.message}`);
+                return false;
+            }
+
+            await supabase.from('aptitude_tests').insert({
+                ...defaultTest,
+                drive_id: driveData.id,
+            });
+
+            await fetchData();
+            await logAction(user.id, user.role, 'DRIVE_CREATED', driveData.id, `Created drive: ${newDrive.company_name}`);
+            return true;
+        },
+        [aptitudeTests, fetchData, isMockMode, logAction, placementDrives, user]
+    );
+
+    const updatePlacementDrive = useCallback(
+        async (id, updates) => {
+            const sanitizedUpdates = {
+                ...updates,
+                required_skills: updates.required_skills
+                    ? parseSkillInput(updates.required_skills)
+                    : updates.required_skills,
+            };
+
+            if (isMockMode) {
+                const nextDrives = placementDrives.map((drive) =>
+                    drive.id === id ? { ...drive, ...sanitizedUpdates } : drive
+                );
+                writeStorage(STORAGE_KEYS.placementDrives, nextDrives);
+                setPlacementDrives(nextDrives);
+                return true;
+            }
+
+            const { error } = await supabase
+                .from('placement_drives')
+                .update(sanitizedUpdates)
+                .eq('id', id);
+
+            if (error) {
+                alert(`Drive update failed: ${error.message}`);
+                return false;
+            }
+
+            await fetchData();
+            return true;
+        },
+        [fetchData, isMockMode, placementDrives]
+    );
+
+    const applyToDrive = useCallback(
+        async (driveId) => {
+            const alreadyApplied = placementApplications.some(
+                (application) =>
+                    application.drive_id === driveId && application.student_id === user.id
+            );
+
+            if (alreadyApplied) {
+                return false;
+            }
+
+            const newApplication = {
+                id: crypto.randomUUID(),
+                drive_id: driveId,
+                student_id: user.id,
+                status: 'applied',
+                applied_at: new Date().toISOString(),
+            };
+
+            if (isMockMode) {
+                const nextApplications = [newApplication, ...placementApplications];
+                writeStorage(STORAGE_KEYS.placementApplications, nextApplications);
+                setPlacementApplications(nextApplications);
+
+                const drive = placementDrives.find((item) => item.id === driveId);
+                const nextNotifications = [
+                    createNotification({
+                        profileId: user.id,
+                        driveId,
+                        title: 'Application submitted',
+                        message: `You successfully applied to ${drive?.company_name || 'the placement drive'}.`,
+                        notificationType: 'application_status',
+                    }),
+                    ...readStorage(STORAGE_KEYS.placementNotifications),
+                ];
+                writeStorage(STORAGE_KEYS.placementNotifications, nextNotifications);
+                setNotifications(nextNotifications);
+                await logAction(user.id, user.role, 'PLACEMENT_APPLY', driveId, `Applied to ${drive?.company_name || 'drive'}`);
+                return true;
+            }
+
+            const { error } = await supabase.from('placement_applications').insert(newApplication);
+
+            if (error) {
+                alert(`Application failed: ${error.message}`);
+                return false;
+            }
+
+            await supabase.from('placement_notifications').insert({
+                profile_id: user.id,
+                drive_id: driveId,
+                title: 'Application submitted',
+                message: 'Your placement-drive application was recorded successfully.',
+                notification_type: 'application_status',
+            });
+
+            await fetchData();
+            await logAction(user.id, user.role, 'PLACEMENT_APPLY', driveId, 'Applied to placement drive');
+            return true;
+        },
+        [fetchData, isMockMode, logAction, placementApplications, placementDrives, user]
+    );
+
+    const markNotificationRead = useCallback(
+        async (notificationId) => {
+            if (isMockMode) {
+                const nextNotifications = notifications.map((notification) =>
+                    notification.id === notificationId
+                        ? { ...notification, is_read: true }
+                        : notification
+                );
+                writeStorage(STORAGE_KEYS.placementNotifications, nextNotifications);
+                setNotifications(nextNotifications);
+                return;
+            }
+
+            await supabase
+                .from('placement_notifications')
+                .update({ is_read: true })
+                .eq('id', notificationId);
+
+            setNotifications((current) =>
+                current.map((notification) =>
+                    notification.id === notificationId
+                        ? { ...notification, is_read: true }
+                        : notification
+                )
+            );
+        },
+        [isMockMode, notifications]
+    );
+
+    const submitAptitudeAttempt = useCallback(
+        async ({ testId, answers, score, totalQuestions, passed }) => {
+            const newAttempt = {
+                id: crypto.randomUUID(),
+                test_id: testId,
+                student_id: user.id,
+                score,
+                total_questions: totalQuestions,
+                passed,
+                answers,
+                submitted_at: new Date().toISOString(),
+            };
+
+            if (isMockMode) {
+                const nextAttempts = [newAttempt, ...aptitudeAttempts];
+                writeStorage(STORAGE_KEYS.aptitudeAttempts, nextAttempts);
+                setAptitudeAttempts(nextAttempts);
+                await logAction(user.id, user.role, 'APTITUDE_ATTEMPT', testId, `Scored ${score}%`);
+                return newAttempt;
+            }
+
+            const { data, error } = await supabase
+                .from('aptitude_attempts')
+                .insert(newAttempt)
+                .select()
+                .single();
+
+            if (error) {
+                alert(`Test submission failed: ${error.message}`);
+                return null;
+            }
+
+            setAptitudeAttempts((current) => [data, ...current]);
+            await logAction(user.id, user.role, 'APTITUDE_ATTEMPT', testId, `Scored ${score}%`);
+            return data;
+        },
+        [aptitudeAttempts, isMockMode, logAction, user]
+    );
+
+    const fillRandomData = useCallback(async () => {
+        if (!user) {
+            alert('Please login first');
             return;
         }
 
-        await supabase.from('audit_logs').insert(newLog);
-    };
-
-    const getAllUsers = () => {
-        return JSON.parse(localStorage.getItem('vsarp_users') || '[]');
-    };
-
-    // --- Mock Data Generators ---
-
-    const fillRandomData = async () => {
-        if (!user) return alert("Please login first");
-
-        if (!window.confirm("This will add 5 random activities to your dashboard for testing. Continue?")) {
+        if (!window.confirm('This will add 5 random activities for testing. Continue?')) {
             return;
         }
 
         const titles = [
-            "Hackathon Winner - TechNova",
-            "IEEE Paper Presentation",
-            "College Cricket Captain",
-            "NGO Volunteer Lead",
-            "National Debate Prize",
-            "Robotics Club Secretary",
-            "Coding Contest Finalist",
-            "Industry Internship - Infosys",
-            "AWS Cloud Certification",
-            "Soft Skills Workshop"
+            'Hackathon Winner - TechNova',
+            'IEEE Paper Presentation',
+            'College Cricket Captain',
+            'NGO Volunteer Lead',
+            'National Debate Prize',
+            'Industry Internship - Infosys',
+            'AWS Cloud Certification',
+            'Soft Skills Workshop',
         ];
         const descriptions = [
-            "Led a team of 4 to build an AI-powered healthcare app, securing 1st place among 50 teams.",
-            "Presented research on 'Sustainable Energy Grid' at the International IEEE Conference.",
-            "Captained the university team to victory in the inter-collegiate T20 tournament.",
-            "Organized a cleanliness drive and awareness campaign impacting 500+ local residents.",
-            "Secured 2nd runner-up in the National Level Debate competition on 'AI Ethics'.",
-            "Managed logistics and workshop coordination for the annual Robotics Symposium."
+            'Led a team of four to build an AI-powered healthcare app and secured first place.',
+            'Presented research on sustainable energy grids at an international conference.',
+            'Coordinated a student sports team through regional qualifiers.',
+            'Organized a social-impact campaign across the local community.',
+            'Completed a high-impact internship focused on backend services and deployment.',
         ];
-        const cats = ['Hackathon', 'Research Paper', 'Sports', 'Internship', 'Certification', 'Soft Skills Test', 'Leadership'];
-        const outcomeTypes = ['Technical', 'Research', 'Leadership', 'Sports'];
-        const skillTags = ['Python', 'Leadership', 'Communication', 'Cloud', 'ML', 'Web Dev', 'Data Analysis'];
-        const years = ['2023-24', '2024-25'];
-        const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
+        const categoriesPool = [
+            'Hackathon',
+            'Research Paper',
+            'Sports',
+            'Internship',
+            'Certification',
+            'Soft Skills Test',
+            'Leadership',
+        ];
+        const skillTags = ['Python', 'Communication', 'Cloud', 'ML', 'SQL', 'Leadership'];
 
         const batch = Array.from({ length: 5 }).map(() => ({
+            id: crypto.randomUUID(),
             student_id: user.id,
             student_name: user.name,
             student_reg_no: user.student_id,
             department: user.department || 'Computer Science',
             title: titles[Math.floor(Math.random() * titles.length)],
-            category: cats[Math.floor(Math.random() * cats.length)],
-            outcome_type: outcomeTypes[Math.floor(Math.random() * outcomeTypes.length)],
+            category: categoriesPool[Math.floor(Math.random() * categoriesPool.length)],
+            outcome_type: ['Technical', 'Research', 'Leadership', 'Sports'][Math.floor(Math.random() * 4)],
             skill_tag: skillTags[Math.floor(Math.random() * skillTags.length)],
-            academic_year: years[Math.floor(Math.random() * years.length)],
-            semester: semesters[Math.floor(Math.random() * semesters.length)],
+            academic_year: '2025-26',
+            semester: String(Math.ceil(Math.random() * 8)),
             description: descriptions[Math.floor(Math.random() * descriptions.length)],
-            date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString(),
+            date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString().split('T')[0],
             proof_url: 'https://example.com/certificate.pdf',
             status: ['pending', 'approved', 'rejected'][Math.floor(Math.random() * 3)],
-            submitted_at: new Date().toISOString()
+            integrity_hash: null,
+            submitted_at: new Date().toISOString(),
         }));
 
         if (isMockMode) {
-            const mockBatch = batch.map(b => ({ ...b, id: crypto.randomUUID() }));
-            const current = JSON.parse(localStorage.getItem('vsarp_activities') || '[]');
-            const updated = [...mockBatch, ...current];
-            localStorage.setItem('vsarp_activities', JSON.stringify(updated));
-            setActivities(updated);
-            alert("Added 5 random activities!");
+            const nextActivities = [...batch, ...activities];
+            writeStorage(STORAGE_KEYS.activities, nextActivities);
+            setActivities(nextActivities);
             return;
         }
 
         const { data, error } = await supabase.from('activities').insert(batch).select();
 
         if (error) {
-            console.error(error);
-            alert("Failed to insert random data: " + error.message);
-        } else {
-            setActivities(prev => [...data, ...prev]);
-            alert("Added 5 random activities!");
+            alert(`Failed to insert demo activities: ${error.message}`);
+            return;
         }
-    };
 
-    const fillRandomResearchPapers = async () => {
-        if (!user) return alert("Please login as faculty first");
+        setActivities((current) => [...data, ...current]);
+    }, [activities, isMockMode, user]);
 
-        if (!window.confirm("This will add 3 random research papers. Continue?")) {
+    const fillRandomResearchPapers = useCallback(async () => {
+        if (!user) {
+            alert('Please login as faculty first');
+            return;
+        }
+
+        if (!window.confirm('This will add 3 random research papers. Continue?')) {
             return;
         }
 
         const topics = [
-            "AI in Healthcare", "Blockchain for Supply Chain", "Quantum Computing Algorithms",
-            "Sustainable Urban Planning", "IoT Security Protocols", "Machine Learning in Finance"
+            'AI in Healthcare',
+            'Blockchain for Supply Chain',
+            'IoT Security Protocols',
         ];
-        const journals = [
-            "IEEE Access", "Nature Machine Intelligence", "Springer AI Review",
-            "ACM Transactions", "Elsevier Journal of Systems"
-        ];
+        const journals = ['IEEE Access', 'Nature Machine Intelligence', 'ACM Transactions'];
 
-        const batch = Array.from({ length: 3 }).map(() => ({
+        const batch = Array.from({ length: 3 }).map((_, index) => ({
+            id: crypto.randomUUID(),
             faculty_id: user.id,
             faculty_name: user.name,
-            title: topics[Math.floor(Math.random() * topics.length)] + ": A Comprehensive Study",
-            abstract: "This paper explores the latest advancements in the field, proposing a novel framework for optimization and scalability.",
-            publication_date: new Date(Date.now() - Math.floor(Math.random() * 10000000000)).toISOString().split('T')[0],
-            journal_conference: journals[Math.floor(Math.random() * journals.length)],
-            url: "https://doi.org/10.1109/ACCESS.2024.1234567",
-            created_at: new Date().toISOString()
+            title: `${topics[index % topics.length]}: A Practical Study`,
+            abstract:
+                'This paper explores recent developments and proposes an implementation-focused framework.',
+            publication_date: new Date().toISOString().split('T')[0],
+            journal_conference: journals[index % journals.length],
+            url: 'https://doi.org/10.1109/ACCESS.2025.1234567',
+            created_at: new Date().toISOString(),
         }));
 
         if (isMockMode) {
-            const mockBatch = batch.map(b => ({ ...b, id: crypto.randomUUID() }));
-            const current = JSON.parse(localStorage.getItem('vsarp_research_papers') || '[]');
-            const updated = [...mockBatch, ...current];
-            localStorage.setItem('vsarp_research_papers', JSON.stringify(updated));
-            setResearchPapers(updated);
-            alert("Added 3 random research papers!");
+            const nextPapers = [...batch, ...researchPapers];
+            writeStorage(STORAGE_KEYS.researchPapers, nextPapers);
+            setResearchPapers(nextPapers);
             return;
         }
 
         const { data, error } = await supabase.from('research_papers').insert(batch).select();
 
         if (error) {
-            console.error(error);
-            alert("Failed to insert random papers: " + error.message);
-        } else {
-            setResearchPapers(prev => [...data, ...prev]);
-            alert("Added 3 random research papers!");
+            alert(`Failed to insert demo papers: ${error.message}`);
+            return;
         }
-    };
 
-    const fillRandomCourses = () => {
-        if (!user) return alert("Please login first");
+        setResearchPapers((current) => [...data, ...current]);
+    }, [isMockMode, researchPapers, user]);
+
+    const fillRandomCourses = useCallback(async () => {
+        if (!user) {
+            alert('Please login first');
+            return;
+        }
+
         const courseNames = [
-            'Data Structures & Algorithms', 'Database Management Systems', 'Operating Systems',
-            'Computer Networks', 'Software Engineering', 'Machine Learning',
-            'Web Technologies', 'Discrete Mathematics', 'Digital Electronics',
-            'Theory of Computation', 'Compiler Design', 'Cloud Computing'
+            'Data Structures',
+            'Database Management Systems',
+            'Operating Systems',
+            'Machine Learning',
+            'Cloud Computing',
+            'Software Engineering',
         ];
-        const semesters = ['1', '2', '3', '4', '5', '6', '7', '8'];
-        const grades = ['A+', 'A', 'B+', 'B', 'C+', 'C', null];
-        const statuses = ['enrolled', 'completed', 'completed', 'completed'];
 
-        const batch = Array.from({ length: 6 }).map((_, i) => {
-            const status = statuses[Math.floor(Math.random() * statuses.length)];
-            return {
-                id: crypto.randomUUID(),
-                student_id: user.id,
-                course_name: courseNames[i % courseNames.length],
-                course_code: `CS${100 + i * 101}`,
-                credits: [3, 4, 3, 4, 3, 2][i % 6],
-                semester: semesters[Math.floor(Math.random() * semesters.length)],
-                status,
-                grade: status === 'completed' ? grades[Math.floor(Math.random() * (grades.length - 1))] : null,
-                created_at: new Date().toISOString()
-            };
-        });
+        const batch = courseNames.map((courseName, index) => ({
+            id: crypto.randomUUID(),
+            student_id: user.id,
+            course_name: courseName,
+            course_code: `CS${201 + index}`,
+            credits: [4, 4, 3, 4, 3, 3][index],
+            semester: String(index + 1),
+            status: index < 4 ? 'completed' : 'enrolled',
+            grade: index < 4 ? ['A', 'A+', 'B+', 'A'][index] : null,
+            created_at: new Date().toISOString(),
+        }));
 
-        const current = JSON.parse(localStorage.getItem('vsarp_courses') || '[]');
-        const updated = [...batch, ...current];
-        localStorage.setItem('vsarp_courses', JSON.stringify(updated));
-        setCourses(updated);
-        alert("Added 6 random courses!");
-    };
+        if (isMockMode) {
+            const nextCourses = [...batch, ...courses];
+            writeStorage(STORAGE_KEYS.courses, nextCourses);
+            setCourses(nextCourses);
+            return;
+        }
 
-    const fillRandomResults = () => {
-        if (!user) return alert("Please login first");
+        const { data, error } = await supabase.from('courses').insert(batch).select();
+
+        if (error) {
+            alert(`Failed to insert demo courses: ${error.message}`);
+            return;
+        }
+
+        setCourses((current) => [...data, ...current]);
+    }, [courses, isMockMode, user]);
+
+    const fillRandomResults = useCallback(async () => {
+        if (!user) {
+            alert('Please login first');
+            return;
+        }
+
         const subjects = [
             { name: 'Data Structures', code: 'CS201', credits: 4 },
             { name: 'DBMS', code: 'CS202', credits: 4 },
             { name: 'Operating Systems', code: 'CS301', credits: 3 },
             { name: 'Computer Networks', code: 'CS302', credits: 3 },
             { name: 'Mathematics III', code: 'MA201', credits: 3 },
-            { name: 'Engineering Physics', code: 'PH101', credits: 3 },
-            { name: 'Soft Skills', code: 'HS201', credits: 2 },
             { name: 'Machine Learning', code: 'CS401', credits: 4 },
         ];
-        const gradeMap = { 'A+': 10, 'A': 9, 'B+': 8, 'B': 7, 'C+': 6, 'C': 5 };
-        const gradeKeys = Object.keys(gradeMap);
+        const gradeMap = { 'A+': 10, A: 9, 'B+': 8, B: 7 };
+        const grades = Object.keys(gradeMap);
 
         const batch = [];
-        for (let sem = 1; sem <= 4; sem++) {
-            const semSubjects = subjects.slice((sem - 1) * 2, (sem - 1) * 2 + 3).concat(subjects[sem % subjects.length]);
-            for (const subj of semSubjects) {
-                const grade = gradeKeys[Math.floor(Math.random() * gradeKeys.length)];
+        for (let semester = 1; semester <= 4; semester += 1) {
+            subjects.slice(0, 3).forEach((subject) => {
+                const grade = grades[Math.floor(Math.random() * grades.length)];
                 batch.push({
                     id: crypto.randomUUID(),
-                    student_id: user.id,
-                    semester: String(sem),
-                    subject: subj.name,
-                    subject_code: subj.code,
-                    credits: subj.credits,
-                    marks: Math.floor(Math.random() * 40) + 60,
-                    max_marks: 100,
-                    grade,
-                    grade_points: gradeMap[grade],
-                    created_at: new Date().toISOString()
+                    ...createResultRecord(user, {
+                        semester: String(semester),
+                        subject: subject.name,
+                        subject_code: subject.code,
+                        credits: subject.credits,
+                        marks: Math.floor(Math.random() * 25) + 70,
+                        max_marks: 100,
+                        grade,
+                        grade_points: gradeMap[grade],
+                    }),
                 });
-            }
+            });
         }
 
-        const current = JSON.parse(localStorage.getItem('vsarp_semester_results') || '[]');
-        const updated = [...batch, ...current];
-        localStorage.setItem('vsarp_semester_results', JSON.stringify(updated));
-        setSemesterResults(updated);
-        alert(`Added ${batch.length} semester results across 4 semesters!`);
-    };
+        if (isMockMode) {
+            const nextResults = [...batch, ...semesterResults];
+            writeStorage(STORAGE_KEYS.semesterResults, nextResults);
+            setSemesterResults(nextResults);
+            return;
+        }
 
-    const fillRandomDrives = () => {
-        if (!user) return alert("Please login first");
+        const { data, error } = await supabase.from('semester_results').insert(batch).select();
+
+        if (error) {
+            alert(`Failed to insert demo results: ${error.message}`);
+            return;
+        }
+
+        setSemesterResults((current) => [...data, ...current]);
+    }, [isMockMode, semesterResults, user]);
+
+    const fillRandomDrives = useCallback(async () => {
+        if (!user) {
+            alert('Please login first');
+            return;
+        }
+
         const companies = [
-            { name: 'TCS', role: 'Software Developer', pkg: '3.6' },
-            { name: 'Infosys', role: 'Systems Engineer', pkg: '3.6' },
-            { name: 'Wipro', role: 'Project Engineer', pkg: '3.5' },
-            { name: 'Microsoft', role: 'SDE Intern', pkg: '18' },
-            { name: 'Google', role: 'SWE Intern', pkg: '25' },
-            { name: 'Amazon', role: 'SDE-1', pkg: '20' },
+            { name: 'TCS', role: 'Systems Engineer', pkg: 3.6, skills: ['Communication', 'Problem Solving', 'SQL'] },
+            { name: 'Infosys', role: 'Digital Specialist', pkg: 6.2, skills: ['Java', 'SQL', 'Cloud'] },
+            { name: 'Wipro', role: 'Project Engineer', pkg: 4.5, skills: ['Python', 'Communication', 'Aptitude'] },
+            { name: 'Microsoft', role: 'SDE Intern', pkg: 18, skills: ['DSA', 'JavaScript', 'React'] },
+            { name: 'Amazon', role: 'SDE-1', pkg: 20, skills: ['DSA', 'System Design', 'Leadership'] },
         ];
-        const depts = ['Computer Science', 'Electronics', 'Mechanical', 'Information Technology'];
-        const statuses = ['upcoming', 'ongoing', 'completed'];
 
-        const batch = companies.map((c, i) => ({
+        const departments = [
+            'Computer Science',
+            'Electronics',
+            'Information Technology',
+            'Mechanical',
+        ];
+
+        const createdAt = new Date().toISOString();
+        const driveBatch = companies.map((company, index) => ({
             id: crypto.randomUUID(),
-            company_name: c.name,
-            role_offered: c.role,
-            package_lpa: c.pkg,
-            drive_date: new Date(Date.now() + (i - 2) * 7 * 86400000).toISOString().split('T')[0],
-            eligibility_cgpa: (5 + Math.random() * 3).toFixed(1),
-            eligible_departments: depts.slice(0, 2 + Math.floor(Math.random() * 3)),
-            status: statuses[i % statuses.length],
-            description: `Campus recruitment drive by ${c.name} for the role of ${c.role}.`,
-            registered_students: [],
+            company_name: company.name,
+            role_offered: company.role,
+            package_lpa: company.pkg,
+            drive_date: new Date(Date.now() + (index + 2) * 86400000 * 4).toISOString().split('T')[0],
+            application_deadline: new Date(Date.now() + (index + 1) * 86400000 * 3).toISOString().split('T')[0],
+            eligibility_cgpa: Number((6 + Math.random() * 2).toFixed(1)),
+            eligible_departments: departments.slice(0, 2 + (index % 2)),
+            required_skills: company.skills,
+            openings: 5 + index,
+            status: index < 3 ? 'open' : 'upcoming',
+            description: `${company.name} is hiring for ${company.role}. Students with strong fundamentals and placement readiness are encouraged to apply.`,
             created_by: user.id,
-            created_at: new Date().toISOString()
+            created_at: createdAt,
         }));
 
-        const current = JSON.parse(localStorage.getItem('vsarp_placement_drives') || '[]');
-        const updated = [...batch, ...current];
-        localStorage.setItem('vsarp_placement_drives', JSON.stringify(updated));
-        setPlacementDrives(updated);
-        alert(`Added ${batch.length} placement drives!`);
-    };
+        const testBatch = driveBatch.map((drive) => ({
+            id: crypto.randomUUID(),
+            drive_id: drive.id,
+            title: `${drive.company_name} Aptitude Round`,
+            company_name: drive.company_name,
+            description: `Timed aptitude practice for ${drive.role_offered}`,
+            duration_minutes: 30,
+            passing_score: 60,
+            questions: buildDefaultAptitudeQuestions(drive.required_skills, drive.company_name),
+            created_by: user.id,
+            created_at: createdAt,
+        }));
 
-    return (
-        <DataContext.Provider value={{
+        if (isMockMode) {
+            const nextDrives = [...driveBatch, ...placementDrives];
+            const nextTests = [...testBatch, ...aptitudeTests];
+            const studentUsers = readStorage(STORAGE_KEYS.users).filter(
+                (profile) => profile.role === 'student'
+            );
+            const generatedNotifications = driveBatch.flatMap((drive) =>
+                studentUsers.map((studentProfile) =>
+                    createNotification({
+                        profileId: studentProfile.id,
+                        driveId: drive.id,
+                        title: `${drive.company_name} drive is live`,
+                        message: `${drive.role_offered} applications open until ${drive.application_deadline}.`,
+                    })
+                )
+            );
+
+            writeStorage(STORAGE_KEYS.placementDrives, nextDrives);
+            writeStorage(STORAGE_KEYS.aptitudeTests, nextTests);
+            writeStorage(STORAGE_KEYS.placementNotifications, [
+                ...generatedNotifications,
+                ...readStorage(STORAGE_KEYS.placementNotifications),
+            ]);
+            setPlacementDrives(nextDrives);
+            setAptitudeTests(nextTests);
+            setNotifications(readStorage(STORAGE_KEYS.placementNotifications));
+            return;
+        }
+
+        const { error: drivesError } = await supabase.from('placement_drives').insert(driveBatch);
+
+        if (drivesError) {
+            alert(`Failed to insert demo drives: ${drivesError.message}`);
+            return;
+        }
+
+        await supabase.from('aptitude_tests').insert(testBatch);
+        await fetchData();
+    }, [aptitudeTests, fetchData, isMockMode, placementDrives, user]);
+
+    const value = useMemo(
+        () => ({
             activities,
             researchPapers,
             categories,
@@ -585,27 +1089,70 @@ export const DataProvider = ({ children }) => {
             courses,
             semesterResults,
             placementDrives,
+            placementApplications,
+            notifications,
+            aptitudeTests,
+            aptitudeAttempts,
+            users,
             addActivity,
+            deleteRejectedActivity,
             addResearchPaper,
             updateStatus,
-            hodVerifyActivity,
             addCategory,
             addCourse,
             addSemesterResult,
             addPlacementDrive,
             updatePlacementDrive,
+            applyToDrive,
+            markNotificationRead,
+            submitAptitudeAttempt,
             fillRandomData,
             fillRandomResearchPapers,
             fillRandomCourses,
             fillRandomResults,
             fillRandomDrives,
             getAllUsers,
-            loading
-        }}>
-            {children}
-        </DataContext.Provider>
+            refreshData: fetchData,
+            loading,
+        }),
+        [
+            activities,
+            addActivity,
+            addCategory,
+            addCourse,
+            addPlacementDrive,
+            addResearchPaper,
+            addSemesterResult,
+            applyToDrive,
+            aptitudeAttempts,
+            aptitudeTests,
+            auditLog,
+            categories,
+            courses,
+            deleteRejectedActivity,
+            fetchData,
+            fillRandomCourses,
+            fillRandomData,
+            fillRandomDrives,
+            fillRandomResearchPapers,
+            fillRandomResults,
+            getAllUsers,
+            loading,
+            markNotificationRead,
+            notifications,
+            placementApplications,
+            placementDrives,
+            researchPapers,
+            semesterResults,
+            submitAptitudeAttempt,
+            updatePlacementDrive,
+            updateStatus,
+            users,
+        ]
     );
+
+    return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useData = () => useContext(DataContext);
-
