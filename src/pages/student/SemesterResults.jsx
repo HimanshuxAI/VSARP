@@ -2,13 +2,17 @@ import React, { useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import {
     Award,
     BarChart2,
     CheckCircle2,
     ClipboardList,
     Copy,
+    ExternalLink,
+    Plus,
     TrendingUp,
+    X,
 } from 'lucide-react';
 import {
     Bar,
@@ -20,10 +24,31 @@ import {
     YAxis,
 } from 'recharts';
 
+const EMPTY_RESULT_FORM = {
+    semester: '',
+    subject: '',
+    subject_code: '',
+    credits: '',
+    marks: '',
+    max_marks: '100',
+    grade: 'A',
+};
+
+const GRADE_POINT_MAP = {
+    'A+': 10,
+    A: 9,
+    'B+': 8,
+    B: 7,
+    C: 6,
+};
+
 export default function SemesterResults() {
     const { user } = useAuth();
-    const { semesterResults, fillRandomResults, loading } = useData();
+    const { semesterResults, addSemesterResult, fillRandomResults, loading } = useData();
     const [activeSemester, setActiveSemester] = useState('1');
+    const [showForm, setShowForm] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [form, setForm] = useState(EMPTY_RESULT_FORM);
 
     const myResults = useMemo(
         () => semesterResults.filter((result) => result.student_id === user.id),
@@ -73,6 +98,7 @@ export default function SemesterResults() {
     const verifiedCount = myResults.filter(
         (result) => result.verification_status === 'verified'
     ).length;
+    const selectedGradePoints = GRADE_POINT_MAP[form.grade] || 0;
 
     const chartData = useMemo(() => {
         return availableSemesters.map((semester) => {
@@ -104,6 +130,30 @@ export default function SemesterResults() {
         );
     }
 
+    const handleSubmitResult = async (event) => {
+        event.preventDefault();
+        setSubmitting(true);
+
+        const created = await addSemesterResult({
+            semester: form.semester,
+            subject: form.subject,
+            subject_code: form.subject_code,
+            credits: Number(form.credits),
+            marks: Number(form.marks),
+            max_marks: Number(form.max_marks || 100),
+            grade: form.grade,
+            grade_points: selectedGradePoints,
+        });
+
+        if (created) {
+            setActiveSemester(form.semester);
+            setForm(EMPTY_RESULT_FORM);
+            setShowForm(false);
+        }
+
+        setSubmitting(false);
+    };
+
     return (
         <div className="space-y-6 animate-enter pb-10">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -116,10 +166,146 @@ export default function SemesterResults() {
                         be shared externally.
                     </p>
                 </div>
-                <Button onClick={fillRandomResults} variant="outline">
-                    Fill Demo Results
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        onClick={() => setShowForm((current) => !current)}
+                        className="bg-slate-900 text-white hover:bg-slate-800"
+                    >
+                        {showForm ? (
+                            <>
+                                <X className="mr-2 h-4 w-4" />
+                                Close Form
+                            </>
+                        ) : (
+                            <>
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Result
+                            </>
+                        )}
+                    </Button>
+                    <Button onClick={fillRandomResults} variant="outline">
+                        Fill Demo Results
+                    </Button>
+                </div>
             </div>
+
+            {showForm && (
+                <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                    <div className="mb-5">
+                        <h3 className="text-lg font-bold text-slate-900">
+                            Submit Semester Result
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-500">
+                            Saved results get an instant verification record and
+                            shareable verification link.
+                        </p>
+                    </div>
+
+                    <form onSubmit={handleSubmitResult} className="space-y-4">
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                            <Input
+                                required
+                                placeholder="Semester"
+                                value={form.semester}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        semester: event.target.value,
+                                    }))
+                                }
+                            />
+                            <Input
+                                required
+                                placeholder="Subject"
+                                value={form.subject}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        subject: event.target.value,
+                                    }))
+                                }
+                            />
+                            <Input
+                                required
+                                placeholder="Subject Code"
+                                value={form.subject_code}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        subject_code: event.target.value,
+                                    }))
+                                }
+                            />
+                            <Input
+                                required
+                                type="number"
+                                min={1}
+                                placeholder="Credits"
+                                value={form.credits}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        credits: event.target.value,
+                                    }))
+                                }
+                            />
+                            <Input
+                                required
+                                type="number"
+                                min={0}
+                                placeholder="Marks Scored"
+                                value={form.marks}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        marks: event.target.value,
+                                    }))
+                                }
+                            />
+                            <Input
+                                required
+                                type="number"
+                                min={1}
+                                placeholder="Max Marks"
+                                value={form.max_marks}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        max_marks: event.target.value,
+                                    }))
+                                }
+                            />
+                            <select
+                                value={form.grade}
+                                onChange={(event) =>
+                                    setForm((current) => ({
+                                        ...current,
+                                        grade: event.target.value,
+                                    }))
+                                }
+                                className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm text-slate-900"
+                            >
+                                {Object.keys(GRADE_POINT_MAP).map((grade) => (
+                                    <option key={grade} value={grade}>
+                                        Grade {grade}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="flex h-12 items-center rounded-lg border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-600">
+                                Grade Points: {selectedGradePoints}
+                            </div>
+                        </div>
+
+                        <Button
+                            type="submit"
+                            disabled={submitting}
+                            className="bg-slate-900 text-white hover:bg-slate-800"
+                        >
+                            {submitting ? 'Saving Result...' : 'Save Result'}
+                        </Button>
+                    </form>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[
@@ -265,6 +451,20 @@ export default function SemesterResults() {
                                                         <CheckCircle2 className="h-3.5 w-3.5" />
                                                         Verified
                                                     </span>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `${window.location.origin}/verify/${row.verification_hash}`,
+                                                                '_blank'
+                                                            )
+                                                        }
+                                                        className="h-7 text-xs text-slate-500 hover:text-slate-900"
+                                                    >
+                                                        <ExternalLink className="mr-2 h-3 w-3" />
+                                                        Open
+                                                    </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"

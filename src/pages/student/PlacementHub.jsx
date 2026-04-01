@@ -148,7 +148,12 @@ export default function PlacementHub() {
         });
     }, [aptitudeTests, myAttempts, placementDrives]);
 
-    const activeTest = testCards.find((test) => test.id === activeTestId);
+    const resolvedActiveTestId =
+        activeTestId && testCards.some((test) => test.id === activeTestId)
+            ? activeTestId
+            : testCards[0]?.id ?? null;
+
+    const activeTest = testCards.find((test) => test.id === resolvedActiveTestId);
 
     if (loading) {
         return (
@@ -519,7 +524,14 @@ export default function PlacementHub() {
 
                 {testCards.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-400">
-                        No aptitude tests yet.
+                        <p>No aptitude tests yet.</p>
+                        <Button
+                            onClick={fillRandomDrives}
+                            variant="outline"
+                            className="mt-4"
+                        >
+                            Generate Demo Aptitude Tests
+                        </Button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-[0.9fr_1.1fr]">
@@ -529,7 +541,7 @@ export default function PlacementHub() {
                                     key={test.id}
                                     onClick={() => startTest(test.id)}
                                     className={`w-full rounded-2xl border p-4 text-left transition ${
-                                        activeTestId === test.id
+                                        resolvedActiveTestId === test.id
                                             ? 'border-slate-900 bg-slate-900 text-white'
                                             : 'border-slate-100 bg-slate-50 hover:border-slate-300'
                                     }`}
@@ -541,7 +553,7 @@ export default function PlacementHub() {
                                             </p>
                                             <p
                                                 className={`mt-1 text-sm ${
-                                                    activeTestId === test.id
+                                                    resolvedActiveTestId === test.id
                                                         ? 'text-slate-300'
                                                         : 'text-slate-500'
                                                 }`}
@@ -554,7 +566,7 @@ export default function PlacementHub() {
                                             <Badge
                                                 variant="outline"
                                                 className={
-                                                    activeTestId === test.id
+                                                    resolvedActiveTestId === test.id
                                                         ? 'border-white/30 bg-white/10 text-white'
                                                         : ''
                                                 }

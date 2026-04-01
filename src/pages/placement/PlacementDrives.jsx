@@ -311,7 +311,7 @@ export default function PlacementDrives() {
                                         status: event.target.value,
                                     }))
                                 }
-                                className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm"
+                                className="h-12 rounded-lg border border-slate-200 bg-white px-4 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                             >
                                 <option value="open">Open</option>
                                 <option value="upcoming">Upcoming</option>
@@ -330,7 +330,7 @@ export default function PlacementDrives() {
                                     description: event.target.value,
                                 }))
                             }
-                            className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm"
+                            className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                         />
 
                         <div>

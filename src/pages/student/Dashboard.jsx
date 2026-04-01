@@ -24,6 +24,7 @@ import {
     getStudentSkills,
     matchDriveToStudent,
 } from '../../lib/placement';
+import { computeEmployabilityScore } from '../../lib/employabilityScore';
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -68,8 +69,12 @@ export default function StudentDashboard() {
                 semesterResults,
                 studentId: user.id,
                 profileSkills: user.skills,
-            }),
+        }),
         [activities, semesterResults, user.id, user.skills]
+    );
+    const employability = useMemo(
+        () => computeEmployabilityScore(myActivities),
+        [myActivities]
     );
 
     const matchedOpenings = useMemo(() => {
@@ -188,8 +193,14 @@ export default function StudentDashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 {[
+                    {
+                        label: 'Employability Score',
+                        value: `${employability.score}/100`,
+                        accent: 'bg-purple-50 text-purple-700',
+                        footnote: employability.level,
+                    },
                     {
                         label: 'Verified Activities',
                         value: verifiedActivities.length,
@@ -223,6 +234,11 @@ export default function StudentDashboard() {
                                 <p className="mt-3 text-3xl font-bold text-slate-900">
                                     {card.value}
                                 </p>
+                                {card.footnote && (
+                                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                        {card.footnote}
+                                    </p>
+                                )}
                             </div>
                             <div className={`rounded-2xl px-3 py-2 text-xs font-semibold ${card.accent}`}>
                                 Live

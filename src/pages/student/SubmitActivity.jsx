@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -8,7 +8,7 @@ import { AlertCircle, CheckCircle, FileText, UploadCloud, X, Scan, Sparkles, Loa
 import { cn } from '../../lib/utils'; // Ensure utility is imported
 
 export default function SubmitActivity() {
-    const { addActivity, categories } = useData();
+    const { addActivity } = useData();
     const { user } = useAuth();
     const navigate = useNavigate();
 
@@ -22,7 +22,8 @@ export default function SubmitActivity() {
         date: '',
         description: '',
         proof: null,
-        proofName: ''
+        proofName: '',
+        proofSizeLabel: ''
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [scanStatus, setScanStatus] = useState('idle'); // idle, scanning, verified, failed
@@ -71,7 +72,8 @@ export default function SubmitActivity() {
             setFormData({
                 ...formData,
                 proof: URL.createObjectURL(file), // Mock URL for preview
-                proofName: file.name
+                proofName: file.name,
+                proofSizeLabel: `${(file.size / (1024 * 1024)).toFixed(1)} MB`
             });
             setError('');
 
@@ -84,7 +86,7 @@ export default function SubmitActivity() {
     };
 
     const removeFile = () => {
-        setFormData({ ...formData, proof: null, proofName: '' });
+        setFormData({ ...formData, proof: null, proofName: '', proofSizeLabel: '' });
         setScanStatus('idle');
     };
 
@@ -124,7 +126,8 @@ export default function SubmitActivity() {
             date: new Date().toISOString().split('T')[0],
             description: mockDescs[cats.indexOf(randomCat)],
             proof: 'https://example.com/mock-certificate.pdf',
-            proofName: `certificate_${Date.now()}.pdf`
+            proofName: `certificate_${Date.now()}.pdf`,
+            proofSizeLabel: '2.4 MB'
         });
 
         // Trigger Mock AI Scan
@@ -262,7 +265,7 @@ export default function SubmitActivity() {
                                 value={formData.category}
                                 onChange={handleChange}
                                 className={cn(
-                                    "flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all",
+                                    "flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all",
                                     aiHint && aiHint.type === 'category' && "ring-2 ring-indigo-500 border-indigo-500"
                                 )}
                             >
@@ -304,7 +307,7 @@ export default function SubmitActivity() {
                                 name="outcome_type"
                                 value={formData.outcome_type}
                                 onChange={handleChange}
-                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
+                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
                             >
                                 <option value="">Select Outcome Type</option>
                                 {['Technical', 'Research', 'Leadership', 'Sports'].map(t => <option key={t} value={t}>{t}</option>)}
@@ -335,7 +338,7 @@ export default function SubmitActivity() {
                                 name="academic_year"
                                 value={formData.academic_year}
                                 onChange={handleChange}
-                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
+                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
                             >
                                 <option value="">Select Year</option>
                                 {['2021-22', '2022-23', '2023-24', '2024-25', '2025-26'].map(y => <option key={y} value={y}>{y}</option>)}
@@ -352,7 +355,7 @@ export default function SubmitActivity() {
                                 name="semester"
                                 value={formData.semester}
                                 onChange={handleChange}
-                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
+                                className="flex h-11 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none transition-all"
                             >
                                 <option value="">Select Semester</option>
                                 {['1', '2', '3', '4', '5', '6', '7', '8'].map(s => <option key={s} value={s}>Sem {s}</option>)}
@@ -374,7 +377,7 @@ export default function SubmitActivity() {
                         rows={3}
                         value={formData.description}
                         onChange={handleChange}
-                        className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-3 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none transition-all"
+                        className="flex w-full rounded-md border border-gray-300 bg-white px-3 py-3 text-sm text-slate-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent resize-none transition-all"
                         placeholder="Briefly describe the activity and your role..."
                     />
                     <div className="flex justify-end">
@@ -423,7 +426,7 @@ export default function SubmitActivity() {
                                             <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">
                                                 {formData.proofName}
                                             </p>
-                                            <p className="text-xs text-gray-500">{(5.2 + Math.random()).toFixed(1)} MB</p>
+                                            <p className="text-xs text-gray-500">{formData.proofSizeLabel || '0.0 MB'}</p>
                                         </div>
                                     </div>
                                     <Button
