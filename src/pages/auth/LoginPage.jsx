@@ -136,44 +136,11 @@ export default function LoginPage() {
     
                     </form>
 
-                    {(
-                        <div className="mt-8 pt-6 border-t border-slate-200/60 text-center">
-                            <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mb-3">Quick Demo Access</p>
-                            <div className="grid grid-cols-2 gap-2">
-                                {DEMO_LOGINS.map(demo => {
-                                    const roleColors = {
-                                        student: 'bg-blue-50 text-blue-700 border-blue-200',
-                                        faculty: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                        hod: 'bg-violet-50 text-violet-700 border-violet-200',
-                                        placement_cell: 'bg-amber-50 text-amber-700 border-amber-200',
-                                        admin: 'bg-slate-100 text-slate-700 border-slate-300',
-                                    };
-                                    const cls = roleColors[demo.role] || roleColors.student;
-                                    return (
-                                        <button
-                                            key={demo.email}
-                                            onClick={() => { setEmail(demo.email); setPassword('password123'); }}
-                                            className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all hover:shadow-md hover:scale-[1.02] active:scale-[0.98] ${cls} ${email === demo.email ? 'ring-2 ring-offset-1 ring-slate-900' : ''}`}
-                                        >
-                                            {demo.label}
-                                            {demo.dept && <span className="block text-[9px] opacity-60 mt-0.5">{demo.dept}</span>}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 <p className="text-center mt-8 text-xs text-gray-600/50 hover:text-gray-500 transition-colors cursor-pointer" onClick={() => navigate('/verify/demo')}>
                     Public Verification Access &rarr;
                 </p>
-                {(
-                    <p className="text-center mt-2 text-xs text-red-400/60 hover:text-red-500 transition-colors cursor-pointer"
-                       onClick={() => { resetDemoData(); window.location.reload(); }}>
-                        ↻ Reset Demo Data
-                    </p>
-                )}
             </motion.div>
         </div>
     );
