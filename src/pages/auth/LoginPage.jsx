@@ -133,14 +133,10 @@ export default function LoginPage() {
                                 Create an Account
                             </span>
                         </div>
-                        {isSupabaseConfigured && (
-                            <p className="text-center text-xs text-slate-500">
-                                Supabase auth is enabled. Sign in with an approved account.
-                            </p>
-                        )}
+    
                     </form>
 
-                    {!isSupabaseConfigured && (
+                    {(
                         <div className="mt-8 pt-6 border-t border-slate-200/60 text-center">
                             <p className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mb-3">Quick Demo Access</p>
                             <div className="grid grid-cols-2 gap-2">
@@ -172,7 +168,7 @@ export default function LoginPage() {
                 <p className="text-center mt-8 text-xs text-gray-600/50 hover:text-gray-500 transition-colors cursor-pointer" onClick={() => navigate('/verify/demo')}>
                     Public Verification Access &rarr;
                 </p>
-                {!isSupabaseConfigured && (
+                {(
                     <p className="text-center mt-2 text-xs text-red-400/60 hover:text-red-500 transition-colors cursor-pointer"
                        onClick={() => { resetDemoData(); window.location.reload(); }}>
                         ↻ Reset Demo Data
