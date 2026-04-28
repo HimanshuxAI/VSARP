@@ -11,6 +11,7 @@ import {
     isSupabaseConfigured,
     supabase,
 } from '../lib/supabase';
+import { SEED_USERS } from '../lib/seedData';
 
 const AuthContext = createContext(null);
 const FAKE_SESSION_KEY = 'vsarp_fake_session';
@@ -259,6 +260,14 @@ export const AuthProvider = ({ children }) => {
                     }
 
                     const sessionUser = createUserSession(foundUser);
+                    persistMockSession(sessionUser);
+                    return { user: sessionUser };
+                }
+
+                // Check seed users
+                const seedUser = SEED_USERS.find(u => u.email === email);
+                if (seedUser) {
+                    const sessionUser = createUserSession(seedUser);
                     persistMockSession(sessionUser);
                     return { user: sessionUser };
                 }

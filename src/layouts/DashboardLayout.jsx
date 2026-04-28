@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { LayoutDashboard, FileText, CheckSquare, ShieldCheck, LogOut, BarChart3, Users, Target, BookOpen, Briefcase, UserCheck, Menu, X, GraduationCap, ClipboardList, FileBarChart, UserCog, Filter, CalendarPlus } from 'lucide-react';
 import { cn } from '../lib/utils';
 import CommandPalette from '../components/CommandPalette';
+import AiAssistant from '../components/AiAssistant';
 
 export default function DashboardLayout() {
     const { user, logout, loading } = useAuth();
@@ -29,8 +30,7 @@ export default function DashboardLayout() {
     const navItems = {
         student: [
             { name: 'Dashboard', href: '/student/dashboard', icon: LayoutDashboard },
-            { name: 'Academics', href: '/student/academics', icon: GraduationCap },
-            { name: 'Semester Results', href: '/student/results', icon: ClipboardList },
+            { name: 'Academics & Results', href: '/student/academics', icon: GraduationCap },
             { name: 'Placements', href: '/student/placements', icon: Briefcase },
             { name: 'Career Navigator', href: '/student/career-navigator', icon: Target },
             { name: 'Submit Activity', href: '/student/submit', icon: FileText },
@@ -176,6 +176,7 @@ export default function DashboardLayout() {
                     </div>
                 </main>
             </div>
+            <AiAssistant />
         </div>
     );
 }

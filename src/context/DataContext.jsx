@@ -14,6 +14,10 @@ import {
     generateVerificationHash,
     parseSkillInput,
 } from '../lib/placement';
+import { seedDemoData } from '../lib/seedData';
+
+// Auto-seed demo data on first mock-mode load
+if (!isSupabaseConfigured) { seedDemoData(); }
 
 const DataContext = createContext(null);
 
@@ -516,6 +520,37 @@ export const DataProvider = ({ children }) => {
             return true;
         },
         [isMockMode, semesterResults, user]
+    );
+
+    const updateResultStatus = useCallback(
+        async (resultId, status, reviewerName = user?.name) => {
+            const target = semesterResults.find(r => r.id === resultId);
+            if (!target) return false;
+
+            const updates = {
+                verification_status: status,
+                verified_by: status === 'verified' ? reviewerName : null,
+                verified_at: status === 'verified' ? new Date().toISOString() : null,
+                verification_hash: status === 'verified' ? generateVerificationHash('result') : null,
+            };
+
+            if (isMockMode) {
+                const nextResults = semesterResults.map(r =>
+                    r.id === resultId ? { ...r, ...updates } : r
+                );
+                writeStorage(STORAGE_KEYS.semesterResults, nextResults);
+                setSemesterResults(nextResults);
+                await logAction(user?.id, user?.role || 'faculty', `RESULT_${status.toUpperCase()}`, resultId, `Result ${status}: ${target.subject}`);
+                return true;
+            }
+
+            const { error } = await supabase.from('semester_results').update(updates).eq('id', resultId);
+            if (error) { alert(`Update failed: ${error.message}`); return false; }
+            await fetchData();
+            await logAction(user?.id, user?.role || 'faculty', `RESULT_${status.toUpperCase()}`, resultId, `Result ${status}: ${target.subject}`);
+            return true;
+        },
+        [fetchData, isMockMode, logAction, semesterResults, user]
     );
 
     const addPlacementDrive = useCallback(
@@ -1101,6 +1136,7 @@ export const DataProvider = ({ children }) => {
             addCategory,
             addCourse,
             addSemesterResult,
+            updateResultStatus,
             addPlacementDrive,
             updatePlacementDrive,
             applyToDrive,
@@ -1146,6 +1182,7 @@ export const DataProvider = ({ children }) => {
             semesterResults,
             submitAptitudeAttempt,
             updatePlacementDrive,
+            updateResultStatus,
             updateStatus,
             users,
         ]

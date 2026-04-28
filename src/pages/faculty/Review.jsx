@@ -6,7 +6,7 @@ import { Badge } from '../../components/ui/badge';
 import { Check, X, Eye, FileText, AlertTriangle, Download, Keyboard, Maximize, Activity, Zap, ShieldAlert } from 'lucide-react';
 
 export default function FacultyReview() {
-    const { activities, updateStatus } = useData();
+    const { activities, semesterResults, updateStatus, updateResultStatus } = useData();
     const { user } = useAuth();
 
     // Filter only Pending
@@ -126,8 +126,69 @@ export default function FacultyReview() {
         setRejectionComment(prev => (prev ? prev + " " + template : template));
     };
 
+    const [reviewTab, setReviewTab] = useState('activities');
+    const pendingResults = semesterResults.filter(r => r.verification_status === 'pending');
+
+    const handleApproveResult = async (resultId) => {
+        await updateResultStatus(resultId, 'verified', user.name);
+    };
+
+    const handleRejectResult = async (resultId) => {
+        await updateResultStatus(resultId, 'rejected', user.name);
+    };
+
     return (
         <div className="h-[calc(100vh-100px)] flex flex-col">
+            {/* Tab Switcher */}
+            <div className="flex gap-2 mb-4 shrink-0">
+                <button onClick={() => setReviewTab('activities')} className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${reviewTab === 'activities' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                    <Activity className="w-4 h-4" /> Activities ({pendingActivities.length})
+                </button>
+                <button onClick={() => setReviewTab('results')} className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${reviewTab === 'results' ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                    <FileText className="w-4 h-4" /> Results ({pendingResults.length})
+                </button>
+            </div>
+
+            {/* ═══ RESULTS TAB ═══ */}
+            {reviewTab === 'results' ? (
+                <div className="flex-1 bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden flex flex-col">
+                    <div className="bg-gray-50/50 px-6 py-4 border-b border-gray-200 flex justify-between items-center shrink-0">
+                        <h3 className="text-lg font-bold text-gray-900">Pending Result Approvals</h3>
+                        <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{pendingResults.length} pending</span>
+                    </div>
+                    {pendingResults.length === 0 ? (
+                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8">
+                            <Check className="w-10 h-10 mb-3 opacity-30" />
+                            <p className="font-medium">All results reviewed. Queue empty.</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-y-auto flex-1 p-4 space-y-3">
+                            {pendingResults.map(result => (
+                                <div key={result.id} className="border border-gray-100 rounded-xl p-4 bg-white hover:shadow-sm transition">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <p className="font-bold text-gray-900">{result.subject}</p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {result.subject_code} • Semester {result.semester} • Credits: {result.credits} • Grade: {result.grade} • Marks: {result.marks}/{result.max_marks}
+                                            </p>
+                                            <p className="text-xs text-gray-400 mt-1">Student ID: {result.student_id?.substring(0, 8)}</p>
+                                        </div>
+                                        <div className="flex gap-2 shrink-0">
+                                            <Button size="sm" variant="outline" onClick={() => handleRejectResult(result.id)} className="text-red-600 border-red-200 hover:bg-red-50 h-8 px-3">
+                                                <X className="w-3 h-3 mr-1" /> Reject
+                                            </Button>
+                                            <Button size="sm" onClick={() => handleApproveResult(result.id)} className="bg-green-600 hover:bg-green-700 text-white h-8 px-3">
+                                                <Check className="w-3 h-3 mr-1" /> Verify
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            ) : (
+            <>
             <header className="mb-4 flex justify-between items-center shrink-0">
                 <div>
                     <h2 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
@@ -381,6 +442,8 @@ export default function FacultyReview() {
                     )}
                 </div>
             </div>
+            </>
+            )}
         </div>
     );
 }

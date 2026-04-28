@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import {
     Archive,
+    BarChart2,
     Briefcase,
     Building,
     Calendar,
@@ -12,6 +13,7 @@ import {
     Clock3,
     DollarSign,
     Plus,
+    Upload,
     Users,
     X,
 } from 'lucide-react';
@@ -42,6 +44,8 @@ export default function PlacementDrives() {
     const {
         placementDrives,
         placementApplications,
+        aptitudeTests,
+        aptitudeAttempts,
         addPlacementDrive,
         fillRandomDrives,
         loading,
@@ -50,6 +54,45 @@ export default function PlacementDrives() {
     const [showForm, setShowForm] = useState(false);
     const [filter, setFilter] = useState('all');
     const [form, setForm] = useState(EMPTY_FORM);
+    const [showAnalytics, setShowAnalytics] = useState(false);
+    const [csvUploadStatus, setCsvUploadStatus] = useState(null);
+    const csvRef = React.useRef(null);
+
+    // Aptitude analytics
+    const aptitudeStats = useMemo(() => {
+        if (!aptitudeAttempts.length) return null;
+        const totalAttempts = aptitudeAttempts.length;
+        const passed = aptitudeAttempts.filter(a => a.passed).length;
+        const avgScore = Math.round(aptitudeAttempts.reduce((s, a) => s + (a.score || 0), 0) / totalAttempts);
+        const topScorers = [...aptitudeAttempts].sort((a, b) => (b.score || 0) - (a.score || 0)).slice(0, 5);
+        return { totalAttempts, passed, failed: totalAttempts - passed, passRate: Math.round((passed / totalAttempts) * 100), avgScore, topScorers };
+    }, [aptitudeAttempts]);
+
+    const handleCSVQuestionUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setCsvUploadStatus('processing');
+        file.text().then(text => {
+            const lines = text.split('\n').filter(l => l.trim());
+            if (lines.length < 2) { setCsvUploadStatus('error'); return; }
+            const parsed = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim());
+                if (cols.length >= 6) {
+                    parsed.push({
+                        id: crypto.randomUUID(),
+                        question: cols[0],
+                        options: [cols[1], cols[2], cols[3], cols[4]],
+                        answer: parseInt(cols[5]) || 0,
+                    });
+                }
+            }
+            setCsvUploadStatus(`success:${parsed.length}`);
+            // Questions parsed - they would be attached to a drive's aptitude test
+            console.log('Parsed questions:', parsed);
+        }).catch(() => setCsvUploadStatus('error'));
+        if (csvRef.current) csvRef.current.value = '';
+    };
 
     const toggleDept = (department) => {
         setForm((current) => ({
@@ -498,6 +541,57 @@ export default function PlacementDrives() {
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* ═══ CSV Question Upload ═══ */}
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2"><Upload className="w-5 h-5 text-slate-500" /> Upload Aptitude Questions (CSV)</h3>
+                        <p className="text-sm text-slate-500 mt-1">Format: question, option1, option2, option3, option4, correct_answer_index</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <input ref={csvRef} type="file" accept=".csv" onChange={handleCSVQuestionUpload} className="hidden" id="csv-q-upload" />
+                        <Button onClick={() => csvRef.current?.click()} variant="outline" className="text-xs"><Upload className="mr-2 h-4 w-4" /> Choose CSV</Button>
+                        <Button onClick={() => setShowAnalytics(!showAnalytics)} variant="outline" className="text-xs"><BarChart2 className="mr-2 h-4 w-4" /> {showAnalytics ? 'Hide' : 'Show'} Analytics</Button>
+                    </div>
+                </div>
+                {csvUploadStatus === 'processing' && <p className="text-sm text-blue-600 font-medium">Processing...</p>}
+                {csvUploadStatus === 'error' && <p className="text-sm text-red-600 font-medium">Failed to parse CSV.</p>}
+                {csvUploadStatus?.startsWith('success:') && <p className="text-sm text-emerald-600 font-medium">✓ Parsed {csvUploadStatus.split(':')[1]} questions successfully.</p>}
+            </div>
+
+            {/* ═══ Aptitude Performance Analytics ═══ */}
+            {showAnalytics && aptitudeStats && (
+                <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm space-y-4">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2"><BarChart2 className="w-5 h-5 text-slate-500" /> Aptitude Test Performance</h3>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Total Attempts', value: aptitudeStats.totalAttempts, color: 'bg-blue-50 text-blue-700' },
+                            { label: 'Pass Rate', value: `${aptitudeStats.passRate}%`, color: 'bg-emerald-50 text-emerald-700' },
+                            { label: 'Avg Score', value: `${aptitudeStats.avgScore}%`, color: 'bg-violet-50 text-violet-700' },
+                            { label: 'Failed', value: aptitudeStats.failed, color: 'bg-red-50 text-red-700' },
+                        ].map(card => (
+                            <div key={card.label} className={`rounded-2xl p-4 ${card.color}`}>
+                                <p className="text-xs font-semibold uppercase tracking-wider opacity-70">{card.label}</p>
+                                <p className="text-2xl font-bold mt-1">{card.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                    {aptitudeStats.topScorers.length > 0 && (
+                        <div>
+                            <h4 className="text-sm font-bold text-slate-700 mb-2">Top Scorers</h4>
+                            <div className="space-y-2">
+                                {aptitudeStats.topScorers.map((s, i) => (
+                                    <div key={s.id || i} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-2">
+                                        <span className="text-sm font-medium text-slate-700">#{i + 1} • {s.student_id?.substring(0, 8) || 'Student'}</span>
+                                        <span className="text-sm font-bold text-slate-900">{s.score}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

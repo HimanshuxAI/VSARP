@@ -24,7 +24,7 @@ import {
     getStudentSkills,
     matchDriveToStudent,
 } from '../../lib/placement';
-import { computeEmployabilityScore } from '../../lib/employabilityScore';
+
 
 export default function StudentDashboard() {
     const { user } = useAuth();
@@ -72,10 +72,7 @@ export default function StudentDashboard() {
         }),
         [activities, semesterResults, user.id, user.skills]
     );
-    const employability = useMemo(
-        () => computeEmployabilityScore(myActivities),
-        [myActivities]
-    );
+
 
     const matchedOpenings = useMemo(() => {
         return placementDrives.filter((drive) => {
@@ -193,14 +190,8 @@ export default function StudentDashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {[
-                    {
-                        label: 'Employability Score',
-                        value: `${employability.score}/100`,
-                        accent: 'bg-purple-50 text-purple-700',
-                        footnote: employability.level,
-                    },
                     {
                         label: 'Verified Activities',
                         value: verifiedActivities.length,

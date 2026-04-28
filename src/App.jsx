@@ -14,7 +14,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import StudentDashboard from './pages/student/Dashboard';
 import SubmitActivity from './pages/student/SubmitActivity';
 import AcademicActivity from './pages/student/AcademicActivity';
-import SemesterResults from './pages/student/SemesterResults';
+
 import PlacementHub from './pages/student/PlacementHub';
 import FacultyReview from './pages/faculty/Review';
 import PublishResearch from './pages/faculty/PublishResearch';
@@ -88,7 +88,6 @@ function AnimatedRoutes() {
             <Route path="/student">
             <Route path="dashboard" element={<P><StudentDashboard /></P>} />
             <Route path="academics" element={<P><AcademicActivity /></P>} />
-            <Route path="results" element={<P><SemesterResults /></P>} />
             <Route path="placements" element={<P><PlacementHub /></P>} />
             <Route path="career-navigator" element={<P><CareerNavigator /></P>} />
             <Route path="career-goals" element={<P><CareerGoalDefinition /></P>} />

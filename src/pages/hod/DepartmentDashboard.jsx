@@ -18,6 +18,13 @@ export default function DepartmentDashboard() {
 
     const avgScore = useMemo(() => scoredStudents.length ? Math.round(scoredStudents.reduce((s, u) => s + u.score, 0) / scoredStudents.length) : 0, [scoredStudents]);
     const approvedCount = useMemo(() => deptActivities.filter(a => a.status === 'approved').length, [deptActivities]);
+    const pendingCount = useMemo(() => deptActivities.filter(a => a.status === 'pending').length, [deptActivities]);
+    const rejectedCount = useMemo(() => deptActivities.filter(a => a.status === 'rejected').length, [deptActivities]);
+    const placementReadiness = useMemo(() => {
+        if (!scoredStudents.length) return 0;
+        const readyCount = scoredStudents.filter(s => s.score >= 60).length;
+        return Math.round((readyCount / scoredStudents.length) * 100);
+    }, [scoredStudents]);
     const participationRate = useMemo(() => {
         if (!allStudents.length) return 0;
         const activeIds = new Set(deptActivities.filter(a => a.status === 'approved').map(a => a.student_id));
@@ -48,12 +55,15 @@ export default function DepartmentDashboard() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                 {[
                     { label: 'Students', value: allStudents.length, icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: 'Avg. Score', value: avgScore, icon: TrendingUp, color: 'text-green-600', bg: 'bg-green-50' },
-                    { label: 'Approved Activities', value: approvedCount, icon: Trophy, color: 'text-purple-600', bg: 'bg-purple-50' },
-                    { label: 'Participation', value: `${participationRate}%`, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Approved', value: approvedCount, icon: Trophy, color: 'text-purple-600', bg: 'bg-purple-50' },
+                    { label: 'Pending', value: pendingCount, icon: Activity, color: 'text-amber-600', bg: 'bg-amber-50' },
+                    { label: 'Rejected', value: rejectedCount, icon: Activity, color: 'text-red-600', bg: 'bg-red-50' },
+                    { label: 'Participation', value: `${participationRate}%`, icon: Activity, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+                    { label: 'Placement Ready', value: `${placementReadiness}%`, icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
                 ].map(card => {
                     const Icon = card.icon;
                     return (

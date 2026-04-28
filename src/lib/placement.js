@@ -137,10 +137,10 @@ export function createResultRecord(user, result) {
         max_marks: Number(result.max_marks) || 100,
         grade: result.grade,
         grade_points: Number(result.grade_points),
-        verification_status: 'verified',
-        verification_hash: generateVerificationHash('result'),
-        verified_by: RESULT_VERIFIER,
-        verified_at: new Date().toISOString(),
+        verification_status: 'pending',
+        verification_hash: null,
+        verified_by: null,
+        verified_at: null,
         created_at: new Date().toISOString(),
     };
 }
