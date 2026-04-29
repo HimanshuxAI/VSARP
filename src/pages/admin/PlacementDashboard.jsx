@@ -30,11 +30,11 @@ function downloadCSV(rows, filename) {
 }
 
 export default function PlacementDashboard() {
-    const { activities, getAllUsers, loading } = useData();
+    const { activities, aptitudeAttempts, getAllUsers, loading } = useData();
     const [threshold, setThreshold] = useState(THRESHOLD);
 
     const allUsers = useMemo(() => getAllUsers().filter(u => u.role === 'student' || !u.role), [getAllUsers]);
-    const scoredStudents = useMemo(() => computeAllStudentScores(allUsers, activities), [allUsers, activities]);
+    const scoredStudents = useMemo(() => computeAllStudentScores(allUsers, activities, aptitudeAttempts), [allUsers, activities, aptitudeAttempts]);
 
     // Department readiness
     const deptMap = useMemo(() => {

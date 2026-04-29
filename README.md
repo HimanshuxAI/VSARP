@@ -8,6 +8,7 @@ VSARP (Virtual Student Academic Resource Portal) is a comprehensive, AI-powered 
 
 ### 🎓 Student Portal
 - **Career Navigator**: AI-driven career path recommendations based on student interests.
+- **VSARP Copilot**: AI assistant backed by a server-side NVIDIA chat completion route, with local fallback guidance for demos.
 - **Goal Definition Wizard**: Interactive assessment to identify and set concrete career goals.
 - **Skill Gap Analysis**: Visualizes the difference between current skills and industry requirements (Mock Implementation).
 - **Portfolio Management**: Submit and track co-curricular activities (hackathons, papers, sports).
@@ -67,9 +68,11 @@ The app now supports both Supabase-backed mode and local mock mode.
 
 1. Copy [.env.example](/Users/himanshu/Desktop/vs/VSARP/.env.example) to `.env.local`
 2. Add your project URL and publishable key
-3. Run the SQL file at [schema.sql](/Users/himanshu/Desktop/vs/VSARP/supabase/schema.sql) in the Supabase SQL editor
+3. Optional: add `NVIDIA_API_KEY` for the AI assistant route
+4. Run the SQL file at [schema.sql](/Users/himanshu/Desktop/vs/VSARP/supabase/schema.sql) in the Supabase SQL editor
 
 If no env vars are present, the app falls back to browser `localStorage` for quick demos.
+Mock mode auto-seeds 10 Computer Science students with approved activities and aptitude attempts for presentations.
 
 ### 🔑 Default Login Credentials
 Use these credentials to test different roles:

@@ -9,12 +9,12 @@ const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
 
 export default function DepartmentDashboard() {
     const { user } = useAuth();
-    const { activities, getAllUsers, loading } = useData();
+    const { activities, aptitudeAttempts, getAllUsers, loading } = useData();
     const dept = user.department || 'Computer Science';
 
     const allStudents = useMemo(() => getAllUsers().filter(u => u.role === 'student' && (u.department || 'General') === dept), [getAllUsers, dept]);
     const deptActivities = useMemo(() => activities.filter(a => (a.department || 'General') === dept), [activities, dept]);
-    const scoredStudents = useMemo(() => computeAllStudentScores(allStudents, activities), [allStudents, activities]);
+    const scoredStudents = useMemo(() => computeAllStudentScores(allStudents, activities, aptitudeAttempts), [allStudents, activities, aptitudeAttempts]);
 
     const avgScore = useMemo(() => scoredStudents.length ? Math.round(scoredStudents.reduce((s, u) => s + u.score, 0) / scoredStudents.length) : 0, [scoredStudents]);
     const approvedCount = useMemo(() => deptActivities.filter(a => a.status === 'approved').length, [deptActivities]);

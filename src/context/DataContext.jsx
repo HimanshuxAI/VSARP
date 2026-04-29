@@ -1037,12 +1037,7 @@ export const DataProvider = ({ children }) => {
             { name: 'Amazon', role: 'SDE-1', pkg: 20, skills: ['DSA', 'System Design', 'Leadership'] },
         ];
 
-        const departments = [
-            'Computer Science',
-            'Electronics',
-            'Information Technology',
-            'Mechanical',
-        ];
+        const departments = ['Computer Science'];
 
         const createdAt = new Date().toISOString();
         const driveBatch = companies.map((company, index) => ({
@@ -1053,7 +1048,7 @@ export const DataProvider = ({ children }) => {
             drive_date: new Date(Date.now() + (index + 2) * 86400000 * 4).toISOString().split('T')[0],
             application_deadline: new Date(Date.now() + (index + 1) * 86400000 * 3).toISOString().split('T')[0],
             eligibility_cgpa: Number((6 + Math.random() * 2).toFixed(1)),
-            eligible_departments: departments.slice(0, 2 + (index % 2)),
+            eligible_departments: departments,
             required_skills: company.skills,
             openings: 5 + index,
             status: index < 3 ? 'open' : 'upcoming',

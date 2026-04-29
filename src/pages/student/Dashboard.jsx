@@ -24,12 +24,14 @@ import {
     getStudentSkills,
     matchDriveToStudent,
 } from '../../lib/placement';
+import { computeEmployabilityScore } from '../../lib/employabilityScore';
 
 
 export default function StudentDashboard() {
     const { user } = useAuth();
     const {
         activities,
+        aptitudeAttempts,
         semesterResults,
         placementDrives,
         notifications,
@@ -98,6 +100,19 @@ export default function StudentDashboard() {
     );
     const unreadNotifications = myNotifications.filter(
         (notification) => !notification.is_read
+    );
+    const employability = useMemo(
+        () =>
+            computeEmployabilityScore(myActivities, {
+                allAttempts: aptitudeAttempts,
+                studentAttempts: aptitudeAttempts.filter(
+                    (attempt) => attempt.student_id === user.id
+                ),
+            }),
+        [aptitudeAttempts, myActivities, user.id]
+    );
+    const aptitudeBreakdown = employability.breakdown.find(
+        (item) => item.category === 'Aptitude Tests'
     );
 
     const filteredActivities =
@@ -190,8 +205,13 @@ export default function StudentDashboard() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 {[
+                    {
+                        label: 'Employability Score',
+                        value: `${employability.score}/100`,
+                        accent: 'bg-slate-900 text-white',
+                    },
                     {
                         label: 'Verified Activities',
                         value: verifiedActivities.length,
@@ -333,6 +353,20 @@ export default function StudentDashboard() {
                             Placement Snapshot
                         </h3>
                         <div className="mt-4 space-y-3 text-sm text-slate-600">
+                            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                                <span>Employability level</span>
+                                <span className={`font-semibold ${employability.levelColor}`}>
+                                    {employability.level}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+                                <span>Aptitude percentile</span>
+                                <span className="font-semibold text-slate-900">
+                                    {aptitudeBreakdown?.percentile
+                                        ? `${aptitudeBreakdown.percentile}%`
+                                        : 'No pass yet'}
+                                </span>
+                            </div>
                             <div className="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
                                 <span>Current CGPA</span>
                                 <span className="font-semibold text-slate-900">

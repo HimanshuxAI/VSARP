@@ -4,6 +4,7 @@ import { useData } from '../../context/DataContext';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import {
+    BarChart3,
     Bell,
     Briefcase,
     CheckCircle2,
@@ -11,12 +12,14 @@ import {
     GraduationCap,
     Sparkles,
     Target,
+    TrendingUp,
 } from 'lucide-react';
 import {
     computeCgpa,
     getStudentSkills,
     matchDriveToStudent,
 } from '../../lib/placement';
+import { computeStudentAptitudeAnalytics } from '../../lib/aptitudeAnalytics';
 
 function DriveBadge({ label, active = false }) {
     return (
@@ -126,6 +129,14 @@ export default function PlacementHub() {
         (notification) => !notification.is_read
     );
     const passedTests = myAttempts.filter((attempt) => attempt.passed);
+    const aptitudeAnalytics = useMemo(
+        () =>
+            computeStudentAptitudeAnalytics({
+                allAttempts: aptitudeAttempts,
+                studentId: user.id,
+            }),
+        [aptitudeAttempts, user.id]
+    );
 
     const testCards = useMemo(() => {
         return aptitudeTests.map((test) => {
@@ -228,7 +239,7 @@ export default function PlacementHub() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
                 {[
                     {
                         label: 'Matched Openings',
@@ -253,6 +264,15 @@ export default function PlacementHub() {
                         value: passedTests.length,
                         icon: ClipboardCheck,
                         color: 'bg-violet-50 text-violet-700',
+                    },
+                    {
+                        label: 'Best Aptitude',
+                        value:
+                            aptitudeAnalytics.bestScore !== null
+                                ? `${aptitudeAnalytics.bestScore}%`
+                                : 'NA',
+                        icon: TrendingUp,
+                        color: 'bg-rose-50 text-rose-700',
                     },
                 ].map((card) => {
                     const Icon = card.icon;
@@ -520,6 +540,49 @@ export default function PlacementHub() {
                         Best prep works when you practice the company-linked round
                         before applying.
                     </div>
+                </div>
+
+                <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
+                    {[
+                        {
+                            label: 'Attempts',
+                            value: aptitudeAnalytics.totalAttempts,
+                        },
+                        {
+                            label: 'Average',
+                            value: `${aptitudeAnalytics.averageScore}%`,
+                        },
+                        {
+                            label: 'Pass Rate',
+                            value: `${aptitudeAnalytics.passRate}%`,
+                        },
+                        {
+                            label: 'Percentile',
+                            value:
+                                aptitudeAnalytics.percentile !== null
+                                    ? `${aptitudeAnalytics.percentile}%`
+                                    : 'NA',
+                        },
+                        {
+                            label: 'Failed',
+                            value: aptitudeAnalytics.failedAttempts,
+                        },
+                    ].map((metric) => (
+                        <div
+                            key={metric.label}
+                            className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                        >
+                            <div className="flex items-center gap-2 text-slate-400">
+                                <BarChart3 className="h-3.5 w-3.5" />
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.2em]">
+                                    {metric.label}
+                                </p>
+                            </div>
+                            <p className="mt-2 text-2xl font-bold text-slate-900">
+                                {metric.value}
+                            </p>
+                        </div>
+                    ))}
                 </div>
 
                 {testCards.length === 0 ? (

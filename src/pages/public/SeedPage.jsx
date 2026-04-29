@@ -13,39 +13,74 @@ const adminAccount = {
 
 const demoStudents = [
     {
-        email: 'riya.sharma@vsarp.com',
-        name: 'Riya Sharma',
-        studentId: 'CSE24017',
+        email: 'aarav.sharma@vsarp.edu',
+        name: 'Aarav Sharma',
+        studentId: 'CS-2023-001',
         department: 'Computer Science',
-        skills: ['Python', 'SQL', 'Communication'],
+        skills: ['Python', 'Machine Learning', 'SQL'],
     },
     {
-        email: 'arjun.nair@vsarp.com',
-        name: 'Arjun Nair',
-        studentId: 'IT24008',
-        department: 'Information Technology',
-        skills: ['JavaScript', 'Cloud', 'Problem Solving'],
-    },
-    {
-        email: 'meera.iyer@vsarp.com',
-        name: 'Meera Iyer',
-        studentId: 'ECE24011',
-        department: 'Electronics',
-        skills: ['Data Visualization', 'SQL', 'Leadership'],
-    },
-    {
-        email: 'kabir.singh@vsarp.com',
-        name: 'Kabir Singh',
-        studentId: 'CSE24021',
+        email: 'priya.patel@vsarp.edu',
+        name: 'Priya Patel',
+        studentId: 'CS-2023-002',
         department: 'Computer Science',
-        skills: ['Python', 'JavaScript', 'Problem Solving'],
+        skills: ['Java', 'Spring Boot', 'AWS'],
     },
     {
-        email: 'sana.khan@vsarp.com',
-        name: 'Sana Khan',
-        studentId: 'IT24019',
-        department: 'Information Technology',
-        skills: ['Communication', 'Cloud', 'Leadership'],
+        email: 'rohan.deshmukh@vsarp.edu',
+        name: 'Rohan Deshmukh',
+        studentId: 'CS-2023-003',
+        department: 'Computer Science',
+        skills: ['Python', 'IoT', 'Data Structures'],
+    },
+    {
+        email: 'sneha.kulkarni@vsarp.edu',
+        name: 'Sneha Kulkarni',
+        studentId: 'CS-2023-004',
+        department: 'Computer Science',
+        skills: ['React', 'Node.js', 'MongoDB'],
+    },
+    {
+        email: 'arjun.mehta@vsarp.edu',
+        name: 'Arjun Mehta',
+        studentId: 'CS-2023-005',
+        department: 'Computer Science',
+        skills: ['Java', 'Data Structures', 'System Design'],
+    },
+    {
+        email: 'neha.reddy@vsarp.edu',
+        name: 'Neha Reddy',
+        studentId: 'CS-2023-006',
+        department: 'Computer Science',
+        skills: ['Python', 'Data Visualization', 'SQL'],
+    },
+    {
+        email: 'vikram.singh@vsarp.edu',
+        name: 'Vikram Singh',
+        studentId: 'CS-2023-007',
+        department: 'Computer Science',
+        skills: ['Cloud', 'DevOps', 'Linux'],
+    },
+    {
+        email: 'kavya.menon@vsarp.edu',
+        name: 'Kavya Menon',
+        studentId: 'CS-2023-008',
+        department: 'Computer Science',
+        skills: ['Cybersecurity', 'Networking', 'Python'],
+    },
+    {
+        email: 'ishaan.kapoor@vsarp.edu',
+        name: 'Ishaan Kapoor',
+        studentId: 'CS-2023-009',
+        department: 'Computer Science',
+        skills: ['JavaScript', 'React', 'UI Engineering'],
+    },
+    {
+        email: 'tanvi.rao@vsarp.edu',
+        name: 'Tanvi Rao',
+        studentId: 'CS-2023-010',
+        department: 'Computer Science',
+        skills: ['AI', 'NLP', 'Python'],
     },
 ];
 
@@ -62,7 +97,7 @@ export default function SeedPage() {
                     </h1>
                     <p className="mx-auto max-w-2xl text-sm leading-6 text-slate-600">
                         Running <code className="rounded bg-slate-100 px-1.5 py-0.5">supabase/schema.sql</code>{' '}
-                        creates five Supabase-auth student accounts with sample results,
+                        creates ten Computer Science student accounts with sample results,
                         activities, placement applications, notifications, and aptitude
                         history.
                     </p>
