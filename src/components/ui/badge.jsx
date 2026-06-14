@@ -1,6 +1,10 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
+/**
+ * Badge component for displaying dynamic status pills.
+ * Supported variants: default, secondary, destructive, outline, success, warning.
+ */
 const Badge = ({ className, variant = "default", ...props }) => {
     const variants = {
         default: "border-transparent bg-blue-600 text-white hover:bg-blue-700",
