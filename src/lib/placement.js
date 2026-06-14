@@ -1,3 +1,7 @@
+/**
+ * Academic Placement & Verification Utilities.
+ * Includes CGPA calculation, skill parsing, and drive eligibility criteria.
+ */
 const RESULT_VERIFIER = 'Controller of Examinations';
 
 export function normalizeSkill(value = '') {
