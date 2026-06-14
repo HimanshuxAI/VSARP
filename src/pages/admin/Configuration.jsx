@@ -6,7 +6,7 @@ import { Input } from '../../components/ui/input';
 import { Settings, Plus, Trash2, Database, AlertCircle } from 'lucide-react';
 
 export default function Configuration() {
-    const { categories, addCategory, deleteCategory, seedDatabase } = useData(); // Assuming deleteCategory exists or I'll implement it locally if needed
+    const { categories, addCategory, seedDatabase } = useData(); // Assuming deleteCategory exists or I'll implement it locally if needed
     const { user } = useAuth();
     const [newCat, setNewCat] = useState('');
 
