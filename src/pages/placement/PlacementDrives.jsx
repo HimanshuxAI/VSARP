@@ -44,7 +44,6 @@ export default function PlacementDrives() {
     const {
         placementDrives,
         placementApplications,
-        aptitudeTests,
         aptitudeAttempts,
         addPlacementDrive,
         fillRandomDrives,
