@@ -4,18 +4,15 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { ShieldCheck, User, Lock, Sparkles } from 'lucide-react';
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
-import { DEMO_LOGINS, resetDemoData } from '../../lib/seedData';
 
 export default function LoginPage() {
-    const { login, user, loading: authLoading, isSupabaseConfigured } = useAuth();
+    const { login, user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('student');
 
     useEffect(() => {
         if (!authLoading && user) {
@@ -39,19 +36,6 @@ export default function LoginPage() {
             setError(err.message || 'Failed to sign in');
             setLoading(false);
         }
-    };
-
-    const fillDemo = (role) => {
-        if (isSupabaseConfigured) {
-            return;
-        }
-
-        setActiveTab(role);
-        if (role === 'student') { setEmail('student@test.com'); setPassword('password123'); }
-        if (role === 'faculty') { setEmail('faculty@test.com'); setPassword('password123'); }
-        if (role === 'admin') { setEmail('admin@test.com'); setPassword('password123'); }
-        if (role === 'hod') { setEmail('hod@test.com'); setPassword('password123'); }
-        if (role === 'placement') { setEmail('placement@test.com'); setPassword('password123'); }
     };
 
     return (
