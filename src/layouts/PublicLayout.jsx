@@ -1,6 +1,10 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 
+/**
+ * PublicLayout wraps unauthenticated public routes such as portfolio verification.
+ * Renders a consistent light grid background.
+ */
 export default function PublicLayout() {
     return (
         <div className="relative w-full min-h-screen overflow-hidden bg-void text-foreground">
