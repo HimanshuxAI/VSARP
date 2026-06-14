@@ -10,6 +10,10 @@
  *   - Percentile-based aptitude scoring
  */
 
+/**
+ * Configuration weights and caps for Student Employability calculation.
+ * Categories include Internships, Research Papers, Certifications, Soft Skills, and Hackathons.
+ */
 // ─── Category Caps ──────────────────────────────────────────────────
 // Each category has a per-item weight and a max number of counted items
 const CATEGORY_CONFIG = {
