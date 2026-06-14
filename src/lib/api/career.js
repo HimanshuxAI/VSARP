@@ -60,6 +60,10 @@ const MOCK_CAREERS = [
 // Helper to simulate network delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * API services for querying available career paths, set student goals,
+ * submit assessment responses, and compute skill gap analyses.
+ */
 export const careerApi = {
     // Fetch all available career paths
     getCareers: async () => {
