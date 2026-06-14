@@ -1,6 +1,10 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
+/**
+ * Container card components for VSARP UI sections.
+ * Supports hover animations, glassmorphic textures, and structural layouts.
+ */
 const Card = React.forwardRef(({ className, ...props }, ref) => (
     <div
         ref={ref}
