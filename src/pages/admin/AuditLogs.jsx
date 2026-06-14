@@ -2,6 +2,10 @@ import React from 'react';
 import { useData } from '../../context/DataContext';
 import { ShieldAlert, Terminal } from 'lucide-react';
 
+/**
+ * AuditLogs displays system-wide actions for monitoring compliance and security.
+ * Renders timestamp, actor details, action type, record targets, and event information.
+ */
 export default function AuditLogs() {
     const { auditLog } = useData();
 
