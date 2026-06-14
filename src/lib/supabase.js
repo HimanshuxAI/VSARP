@@ -1,47 +1,21 @@
 import { createClient } from '@supabase/supabase-js';
 
-export const supabaseUrl =
-    import.meta.env.NEXT_PUBLIC_SUPABASE_URL ||
-    import.meta.env.VITE_SUPABASE_URL ||
-    '';
+const supabaseUrl = import.meta.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY || '';
+const forceMock = import.meta.env.VITE_FORCE_MOCK === 'true';
 
-export const supabaseKey =
-    import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-    import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    import.meta.env.VITE_SUPABASE_KEY ||
-    '';
-
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey);
-
-const fallbackUrl = 'https://placeholder.supabase.co';
-const fallbackKey = 'public-placeholder-key';
-
-export const supabase = createClient(
-    isSupabaseConfigured ? supabaseUrl : fallbackUrl,
-    isSupabaseConfigured ? supabaseKey : fallbackKey,
-    {
-        auth: {
-            autoRefreshToken: true,
-            persistSession: true,
-            detectSessionInUrl: true,
-        },
-    }
+export const isSupabaseConfigured = !forceMock && Boolean(
+    supabaseUrl &&
+    supabaseAnonKey &&
+    supabaseUrl.startsWith('https://') &&
+    !supabaseUrl.includes('placeholder')
 );
 
-export function formatSupabaseError(error) {
-    const message = error?.message || 'Something went wrong while talking to Supabase.';
+export const supabase = isSupabaseConfigured
+    ? createClient(supabaseUrl, supabaseAnonKey)
+    : null;
 
-    if (
-        message.includes("Could not find the table 'public.profiles'") ||
-        message.includes("Could not find the relation 'public.profiles'") ||
-        message.includes('schema cache')
-    ) {
-        return new Error(
-            'Your Supabase database is not initialized yet. Run supabase/reset_all.sql first, then run supabase/schema.sql in the Supabase SQL editor.'
-        );
-    }
-
-    return error instanceof Error ? error : new Error(message);
-}
+export const formatSupabaseError = (error) => {
+    if (!error) return null;
+    return new Error(error.message || 'An error occurred with Supabase.');
+};
