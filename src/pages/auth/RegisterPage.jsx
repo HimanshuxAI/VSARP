@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { ShieldCheck, User, Lock, Mail, Building, BookOpen, Sparkles, ArrowLeft, AlertCircle } from 'lucide-react';
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 
 export default function RegisterPage() {
