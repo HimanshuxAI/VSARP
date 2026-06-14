@@ -6,6 +6,10 @@ function byNewestAttempt(left, right) {
     return new Date(right.submitted_at || 0) - new Date(left.submitted_at || 0);
 }
 
+/**
+ * Computes student performance metrics across mock/real aptitude assessments.
+ * Calculates best score, average score, pass rate, and percentile rank.
+ */
 export function computeStudentAptitudeAnalytics({
     allAttempts = [],
     studentId,
