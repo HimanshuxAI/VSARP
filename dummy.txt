@@ -1,3 +1,5 @@
 Initial dummy file for commit series
 dummy commit 1
 dummy commit 2
+dummy commit 2
+dummy commit 3
