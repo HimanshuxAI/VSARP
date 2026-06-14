@@ -7,6 +7,10 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 
 const COLORS = ['#0f172a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
+/**
+ * DepartmentDashboard renders HOD specific view.
+ * Visualizes student participation rates, top performers, and average employability score distributions.
+ */
 export default function DepartmentDashboard() {
     const { user } = useAuth();
     const { activities, aptitudeAttempts, getAllUsers, loading } = useData();
