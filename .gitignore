@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 
 .env
+
+# Agent & Temp files
+.agents/
+skills-lock.json
+supabase/.temp/
+lint_output.txt
+
