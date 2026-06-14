@@ -31,6 +31,10 @@ function FieldRow({
     );
 }
 
+/**
+ * Profile component displays student and faculty details.
+ * Allows students to manage contacts and showcases system approval counts for faculty.
+ */
 export default function Profile() {
     const { user } = useAuth();
     const { activities } = useData();
