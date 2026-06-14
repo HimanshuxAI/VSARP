@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 const DEMO_PASSWORD = 'password123';
 
 const adminAccount = {
-    email: 'admin@vsarp.com',
-    name: 'VSARP Administrator',
+    email: 'admin@vsarp.edu',
+    name: 'System Admin',
     role: 'Admin',
-    department: 'Administration',
+    department: 'General',
 };
 
 const demoStudents = [
@@ -29,22 +29,22 @@ const demoStudents = [
     {
         email: 'rohan.deshmukh@vsarp.edu',
         name: 'Rohan Deshmukh',
-        studentId: 'CS-2023-003',
-        department: 'Computer Science',
+        studentId: 'EC-2023-003',
+        department: 'Electronics',
         skills: ['Python', 'IoT', 'Data Structures'],
     },
     {
         email: 'sneha.kulkarni@vsarp.edu',
         name: 'Sneha Kulkarni',
-        studentId: 'CS-2023-004',
-        department: 'Computer Science',
+        studentId: 'IT-2023-004',
+        department: 'Information Technology',
         skills: ['React', 'Node.js', 'MongoDB'],
     },
     {
         email: 'arjun.mehta@vsarp.edu',
         name: 'Arjun Mehta',
-        studentId: 'CS-2023-005',
-        department: 'Computer Science',
+        studentId: 'ME-2023-005',
+        department: 'Mechanical',
         skills: ['Java', 'Data Structures', 'System Design'],
     },
     {
