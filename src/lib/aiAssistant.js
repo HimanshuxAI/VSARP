@@ -91,19 +91,45 @@ export async function requestAssistantReply({ message, pathname, history }) {
     const timeoutId = window.setTimeout(() => controller.abort(), 20000);
 
     try {
-        const response = await fetch('/api/ai-assistant', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message, pathname, history }),
-            signal: controller.signal,
-        });
-        const data = await response.json().catch(() => ({}));
+        const apiKey = import.meta.env.VITE_NVIDIA_API_KEY || import.meta.env.NVIDIA_API_KEY || '';
+        const systemPrompt = `You are the VSARP Copilot, an AI assistant for the Verified Secure Academic Record Platform. You help students, faculty, and admins. The user is currently on: ${pathname}. Give helpful, concise answers. If they ask about a developer roadmap (python, web, etc), provide a clear step-by-step roadmap.`;
+        
+        const formattedHistory = (history || [])
+            .filter(msg => msg && msg.text)
+            .map(msg => ({
+                role: msg.role === 'ai' ? 'assistant' : 'user',
+                content: msg.text
+            }));
 
+        const msgs = [
+            { role: "system", content: systemPrompt },
+            ...formattedHistory,
+            { role: "user", content: message }
+        ];
+
+        const response = await fetch("/nvidia-api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: "meta/llama-3.1-8b-instruct",
+                messages: msgs,
+                max_tokens: 512,
+                temperature: 0.7
+            }),
+            signal: controller.signal
+        });
+
+        const data = await response.json();
+        
         if (!response.ok) {
-            throw new Error(data?.error || 'Assistant request failed');
+            console.error("NVIDIA API Error:", data);
+            throw new Error(data?.error?.message || 'Assistant request failed');
         }
 
-        return data.reply;
+        return data.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
     } finally {
         window.clearTimeout(timeoutId);
     }
