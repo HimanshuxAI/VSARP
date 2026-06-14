@@ -18,6 +18,10 @@ function downloadCSV(rows, filename) {
     URL.revokeObjectURL(url);
 }
 
+/**
+ * AccreditationReports aggregates co-curricular activities and research metrics
+ * into formal NAAC SSR indicator lists (Criteria 1, 2, 3, 5, 6).
+ */
 export default function AccreditationReports() {
     const { user } = useAuth();
     const { activities, researchPapers, semesterResults, courses, placementDrives, placementApplications, getAllUsers, loading } = useData();
