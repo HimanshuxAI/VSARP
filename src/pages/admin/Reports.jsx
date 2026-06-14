@@ -4,6 +4,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import { Button } from '../../components/ui/button';
 import { FileText, Download } from 'lucide-react';
 
+/**
+ * Reports allows administrator users to export various reports.
+ * Exportable types include Activity Summaries, Student Participation Indices, and Audit Logs.
+ */
 export default function Reports() {
     const { activities, auditLog } = useData();
 
