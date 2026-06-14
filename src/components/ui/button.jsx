@@ -2,6 +2,10 @@ import * as React from "react"
 import { motion } from "framer-motion"
 import { cn } from "../../lib/utils"
 
+/**
+ * Button component with interactive Framer Motion hover & tap scaling effects.
+ * Supports multiple design themes: default, destructive, outline, secondary, ghost, link, nebula, glass.
+ */
 const Button = React.forwardRef(({ className, variant = "default", size = "default", asChild = false, ...props }, ref) => {
     const Comp = asChild ? motion.div : motion.button
 
