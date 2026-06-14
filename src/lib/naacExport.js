@@ -105,9 +105,7 @@ export function computeNAACMetrics({
     activities = [],
     researchPapers = [],
     semesterResults = [],
-    placementDrives = [],
     placementApplications = [],
-    courses = [],
     department = 'All',
 }) {
     const approvedActivities = activities.filter(a => a.status === 'approved');
@@ -116,7 +114,6 @@ export function computeNAACMetrics({
     const totalFaculty = faculty.length || 1;
 
     // Placement rate
-    const appliedStudents = new Set(placementApplications.map(a => a.student_id));
     const placedStudents = new Set(
         placementApplications.filter(a => a.status === 'selected' || a.status === 'placed').map(a => a.student_id)
     );
