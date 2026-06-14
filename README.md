@@ -1,80 +1,72 @@
 # VSARP - AI Career Navigator & Student Portfolio
 
-![VSARP Banner](/public/vite.svg) *Note: Add a project banner here*
+VSARP (Virtual Student Academic Resource Portal) is a comprehensive AI‑powered platform that guides students through their higher‑education journey. It connects academic achievements with career readiness by offering tools for goal setting, skill‑gap analysis, and portfolio management.
 
-VSARP (Virtual Student Academic Resource Portal) is a comprehensive, AI-powered platform designed to guide students through their higher education journey. It bridges the gap between academic achievements and career readiness by providing tools for goal setting, skill gap analysis, and portfolio management.
+## Key Features
 
-## 🚀 Key Features
-
-### 🎓 Student Portal
-- **Career Navigator**: AI-driven career path recommendations based on student interests.
-- **VSARP Copilot**: AI assistant backed by a server-side NVIDIA chat completion route, with local fallback guidance for demos.
+### Student Portal
+- **Career Navigator**: AI‑driven career path recommendations based on interests.
+- **VSARP Copilot**: AI assistant backed by a server‑side NVIDIA chat completion route, with local fallback for demos.
 - **Goal Definition Wizard**: Interactive assessment to identify and set concrete career goals.
-- **Skill Gap Analysis**: Visualizes the difference between current skills and industry requirements (Mock Implementation).
-- **Portfolio Management**: Submit and track co-curricular activities (hackathons, papers, sports).
-- **Resume Builder**: (Coming Soon) Auto-generate resumes based on portfolio data.
+- **Skill Gap Analysis**: Visual comparison of current skills against industry requirements (mock implementation).
+- **Portfolio Management**: Submit and track co‑curricular activities such as hackathons, papers, and sports.
+- **Resume Builder**: (Coming soon) Auto‑generate resumes from portfolio data.
 
-### 🏫 Faculty Dashboard
+### Faculty Dashboard
 - **Activity Review**: Approve or reject student activity submissions.
 - **Research Publications**: Manage and publish academic research papers.
 - **Student Progress Monitoring**: View aggregate data on student readiness.
 
-### 🛡️ Admin & Security
-- **Role-Based Access Control (RBAC)**: Secure access for Students, Faculty, and Admins.
-- **Audit Logging**: Comprehensive logs of all critical actions (submissions, approvals, config changes).
+### Admin & Security
+- **Role‑Based Access Control (RBAC)**: Secure access for Students, Faculty, and Admins.
+- **Audit Logging**: Comprehensive logs of critical actions (submissions, approvals, config changes).
 - **Configuration**: Manage system categories and settings.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
-- **Frontend**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [Radix UI](https://www.radix-ui.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **Routing**: [React Router DOM](https://reactrouter.com/)
-- **Backend (Simulation)**: Uses `localStorage` for a zero-config "Mock Mode" during development.
-- **Database (Ready)**: [Supabase](https://supabase.com/) SQL migrations included for production.
+- **Frontend**: React with Vite
+- **Styling**: Tailwind CSS + Radix UI
+- **Icons**: Lucide React
+- **Animations**: Framer Motion
+- **Routing**: React Router DOM
+- **Backend (Simulation)**: Uses `localStorage` for a zero‑config mock mode during development.
+- **Database (Ready)**: Supabase SQL migrations are included for production.
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm or yarn
 
 ### Installation
+1. Clone the repository
+   ```bash
+   git clone https://github.com/HimanshuxAI/VSARP.git
+   cd VSARP
+   ```
+2. Install dependencies
+   ```bash
+   npm install
+   ```
+3. Run the development server
+   ```bash
+   npm run dev
+   ```
+   The app will be available at `http://localhost:5173`.
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/HimanshuxAI/VSARP.git
-    cd VSARP
-    ```
+### Supabase Setup
+1. Copy `.env.example` to `.env.local`.
+2. Add your Supabase project URL and public anon key.
+3. Optionally add `NVIDIA_API_KEY` for the AI assistant route.
+4. Run the SQL file at `supabase/schema.sql` in the Supabase SQL editor.
 
-2.  **Install Dependencies**
-    ```bash
-    npm install
-    ```
+If no environment variables are present, the app falls back to browser `localStorage` for quick demos. Mock mode auto‑seeds ten Computer Science students with approved activities and aptitude attempts.
 
-3.  **Run the Development Server**
-    ```bash
-    npm run dev
-    ```
-    The app will open at `http://localhost:5173`.
-
-### 🔐 Supabase Setup
-The app now supports both Supabase-backed mode and local mock mode.
-
-1. Copy [.env.example](/Users/himanshu/Desktop/vs/VSARP/.env.example) to `.env.local`
-2. Add your project URL and publishable key
-3. Optional: add `NVIDIA_API_KEY` for the AI assistant route
-4. Run the SQL file at [schema.sql](/Users/himanshu/Desktop/vs/VSARP/supabase/schema.sql) in the Supabase SQL editor
-
-If no env vars are present, the app falls back to browser `localStorage` for quick demos.
-Mock mode auto-seeds 10 Computer Science students with approved activities and aptitude attempts for presentations.
-
-### 🔑 Default Login Credentials
+### Default Login Credentials
 Use these credentials to test different roles:
 
 **Student**
@@ -91,9 +83,8 @@ Use these credentials to test different roles:
 
 ---
 
-## 📂 Project Structure
-
-```bash
+## Project Structure
+```
 VSARP/
 ├── public/              # Static assets
 ├── src/
@@ -103,7 +94,7 @@ VSARP/
 │   ├── lib/             # Utilities and API services (mock/real)
 │   ├── pages/
 │   │   ├── auth/        # Login & Register
-│   │   ├── student/     # Student-specific pages (Dashboard, Career)
+│   │   ├── student/     # Student‑specific pages (Dashboard, Career)
 │   │   ├── faculty/     # Faculty pages (Review, Research)
 │   │   └── admin/       # Admin pages
 │   ├── App.jsx          # Main Routing Logic
@@ -111,40 +102,36 @@ VSARP/
 ├── supabase/            # Database Migrations (SQL)
 └── README.md            # Project Documentation
 ```
-
 ---
 
-## 🗄️ Database Schema
-
-Run the single schema file at [schema.sql](/Users/himanshu/Desktop/vs/VSARP/supabase/schema.sql) to create the backend structure:
-
+## Database Schema
+Run the single schema file at `supabase/schema.sql` to create the backend structure:
 - `users`: Core user profiles (linked to Auth).
 - `activities`: Student submissions with status workflow.
-- `career_paths`: detailed career options and salaries.
+- `career_paths`: Detailed career options and salaries.
 - `skills`: Skill repository for tagging.
 - `student_profiles`: Extended profile data for career matching.
 - `career_goals`: Links students to their target careers.
 - `research_papers`: Faculty publications.
 
 To apply the backend:
-1.  Set up a Supabase project.
-2.  Copy keys to `.env.local` (see `.env.example`).
-3.  Run `supabase/schema.sql` in the Supabase Dashboard SQL Editor.
+1. Set up a Supabase project.
+2. Copy keys to `.env.local` (see `.env.example`).
+3. Run `supabase/schema.sql` in the Supabase Dashboard SQL Editor.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-1.  Fork the repository.
-2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3.  Commit your changes.
-4.  Push to the branch.
-5.  Open a Pull Request.
+- Added ARIA labels for better accessibility
+- Added Jest test for cn utility function
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes.
+4. Push to the branch.
+5. Open a Pull Request.
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-# vsarpp
-# vsarpp
+This project is licensed under the MIT License – see the LICENSE file for details.
