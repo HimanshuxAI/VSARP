@@ -42,6 +42,10 @@ const GRADE_POINT_MAP = {
     C: 6,
 };
 
+/**
+ * SemesterResults displays SGPA/CGPA charts and verified subjects.
+ * Provides interactive subject GPA adding and secure link verification copying.
+ */
 export default function SemesterResults() {
     const { user } = useAuth();
     const { semesterResults, addSemesterResult, fillRandomResults, loading } = useData();
