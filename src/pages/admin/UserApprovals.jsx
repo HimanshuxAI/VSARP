@@ -29,7 +29,10 @@ export default function UserApprovals() {
     };
 
     useEffect(() => {
-        fetchPendingUsers();
+        const timer = setTimeout(() => {
+            fetchPendingUsers();
+        }, 0);
+        return () => clearTimeout(timer);
     }, []);
 
     const handleApproval = async (userId, approved) => {
