@@ -4,6 +4,10 @@ import * as ProgressPrimitive from "@radix-ui/react-progress"
 
 import { cn } from "../../lib/utils"
 
+/**
+ * Custom Progress bar wrapper component wrapping @radix-ui/react-progress primitives.
+ * Exposes adjustable background and indicator styling parameters.
+ */
 const Progress = React.forwardRef(({ className, value, indicatorClassName, ...props }, ref) => (
     <ProgressPrimitive.Root
         ref={ref}
