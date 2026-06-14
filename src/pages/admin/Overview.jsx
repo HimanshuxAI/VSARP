@@ -8,9 +8,60 @@ import {
     AlertTriangle, FileText, CheckCircle, XCircle, Search, Filter, Activity, Zap, Radio, Globe, Server
 } from 'lucide-react';
 
+const hashCode = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash << 5) - hash + str.charCodeAt(i);
+        hash |= 0;
+    }
+    return Math.abs(hash);
+};
+
+const trendingColor = (t) => t > 0 ? 'text-green-600 border-green-200' : 'text-red-600 border-red-200';
+
+const MetricCard = ({ label, value, trend, color, icon: Icon }) => (
+    <div className="relative overflow-hidden bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm p-5 rounded-2xl group hover:shadow-lg transition-all">
+        <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
+            <Icon className="w-16 h-16" />
+        </div>
+        <div className="flex justify-between items-start">
+            <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
+                <h3 className="text-3xl font-bold text-gray-900 tracking-tighter">{value}</h3>
+            </div>
+            <Badge variant="outline" className={`bg-white/50 backdrop-blur ${trendingColor(trend)}`}>
+                {trend > 0 ? '+' : ''}{trend}%
+            </Badge>
+        </div>
+        <div className="mt-4 h-1 w-full bg-gray-100/50 rounded-full overflow-hidden">
+            <div className={`h-full ${color.replace('text', 'bg')} opacity-50`} style={{ width: `${(hashCode(label) % 61) + 40}%` }}></div>
+        </div>
+    </div>
+);
+
 export default function AdminOverview() {
     const { activities, loading } = useData();
-    const { user } = useAuth();
+    useAuth();
+
+    // -- STATE (must be before any conditional return) --
+    const [filters, setFilters] = useState({
+        year: '2025-2026',
+        category: 'All Categories',
+        status: 'All Status'
+    });
+    const [auditMode, setAuditMode] = useState(false);
+    const [serverLoad, setServerLoad] = useState(42);
+    const [blockNumber, setBlockNumber] = useState(17532000);
+
+    // -- LIVE SIMULATION --
+    // Simulate "Server Heartbeat"
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setServerLoad(prev => Math.max(10, Math.min(90, prev + (Math.random() * 10 - 5))));
+            setBlockNumber(Math.floor(Date.now() / 10000));
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
 
     if (loading) {
         return (
@@ -19,25 +70,6 @@ export default function AdminOverview() {
             </div>
         );
     }
-
-    // -- STATE --
-    const [filters, setFilters] = useState({
-        year: '2025-2026',
-        category: 'All Categories',
-        status: 'All Status'
-    });
-    const [auditMode, setAuditMode] = useState(false);
-    const [selectedRow, setSelectedRow] = useState(null);
-    const [serverLoad, setServerLoad] = useState(42);
-
-    // -- LIVE SIMULATION --
-    // Simulate "Server Heartbeat"
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setServerLoad(prev => Math.max(10, Math.min(90, prev + (Math.random() * 10 - 5))));
-        }, 2000);
-        return () => clearInterval(interval);
-    }, []);
 
     const filteredActivities = activities.filter(a => {
         if (filters.category !== 'All Categories' && a.category !== filters.category) return false;
@@ -52,27 +84,7 @@ export default function AdminOverview() {
         rejected: filteredActivities.filter(a => a.status === 'rejected').length,
     };
 
-    const MetricCard = ({ label, value, trend, color, icon: Icon }) => (
-        <div className="relative overflow-hidden bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm p-5 rounded-2xl group hover:shadow-lg transition-all">
-            <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
-                <Icon className="w-16 h-16" />
-            </div>
-            <div className="flex justify-between items-start">
-                <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-                    <h3 className="text-3xl font-bold text-gray-900 tracking-tighter">{value}</h3>
-                </div>
-                <Badge variant="outline" className={`bg-white/50 backdrop-blur ${trendingColor(trend)}`}>
-                    {trend > 0 ? '+' : ''}{trend}%
-                </Badge>
-            </div>
-            <div className="mt-4 h-1 w-full bg-gray-100/50 rounded-full overflow-hidden">
-                <div className={`h-full ${color.replace('text', 'bg')} opacity-50`} style={{ width: `${Math.random() * 60 + 40}%` }}></div>
-            </div>
-        </div>
-    );
 
-    const trendingColor = (t) => t > 0 ? 'text-green-600 border-green-200' : 'text-red-600 border-red-200';
 
     return (
         <div className="space-y-6 animate-enter pb-10">
@@ -88,7 +100,7 @@ export default function AdminOverview() {
                         </span>
                     </h2>
                     <p className="text-gray-500 mt-1 font-medium flex items-center gap-2">
-                        <Server className="w-4 h-4" /> System Core Online • Latency: 24ms • Validating Block #{Math.floor(Date.now() / 10000)}
+                        <Server className="w-4 h-4" /> System Core Online • Latency: 24ms • Validating Block #{blockNumber}
                     </p>
                 </div>
                 <div className="flex gap-2">
@@ -116,7 +128,7 @@ export default function AdminOverview() {
                     {/* Fake Chart */}
                     <div className="relative z-10 flex items-end gap-1 h-12 mt-4">
                         {[...Array(10)].map((_, i) => (
-                            <div key={i} className="flex-1 bg-green-500/20 rounded-t-sm" style={{ height: `${Math.random() * 100}%` }}></div>
+                            <div key={i} className="flex-1 bg-green-500/20 rounded-t-sm" style={{ height: `${((i * 17 + Math.floor(serverLoad)) % 70) + 30}%` }}></div>
                         ))}
                     </div>
                 </div>
@@ -164,7 +176,7 @@ export default function AdminOverview() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {filteredActivities.map((activity, i) => (
+                            {filteredActivities.map((activity) => (
                                 <tr key={activity.id} className="hover:bg-blue-50/50 transition-colors group cursor-default">
                                     <td className="px-6 py-3 font-mono text-xs text-gray-400">
                                         {new Date(activity.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
