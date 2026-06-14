@@ -1,6 +1,10 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
+/**
+ * Generic single-line input field component with custom styles.
+ * Fully supports type selection and native form validation props.
+ */
 const Input = React.forwardRef(({ className, type, ...props }, ref) => {
     return (
         <input
