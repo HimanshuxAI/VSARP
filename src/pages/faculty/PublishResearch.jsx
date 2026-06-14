@@ -9,6 +9,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '../../components/ui/ca
 import { Badge } from '../../components/ui/badge';
 import { BookOpen, Link as LinkIcon, Calendar, CheckCircle2, FlaskConical } from 'lucide-react';
 
+/**
+ * PublishResearch allows faculty users to record and manage their research papers.
+ * Integrates abstract parsing, DOI links, and date validators.
+ */
 export default function PublishResearch() {
     const { user } = useAuth();
     const { addResearchPaper, researchPapers, fillRandomResearchPapers } = useData();
