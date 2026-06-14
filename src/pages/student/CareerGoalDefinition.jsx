@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { careerApi } from '../../lib/api/career';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { CheckCircle2, ArrowRight, BrainCircuit, Sparkles, Target, Binary, PenTool, Users, BarChart3 } from 'lucide-react';
 
 const INTEREST_TAGS = [
@@ -22,7 +22,7 @@ export default function CareerGoalDefinition() {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
     const [selectedInterests, setSelectedInterests] = useState([]);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
+
     const [suggestions, setSuggestions] = useState([]);
     const [selectedCareer, setSelectedCareer] = useState(null);
 
@@ -36,7 +36,6 @@ export default function CareerGoalDefinition() {
 
     const handleAnalyze = async () => {
         setStep(2); // Move to loading/analysis view
-        setIsAnalyzing(true);
         try {
             const results = await careerApi.submitAssessment(user.id, { interests: selectedInterests });
             setSuggestions(results);
@@ -45,8 +44,6 @@ export default function CareerGoalDefinition() {
             console.error(error);
             alert("Failed to analyze profile. Please try again.");
             setStep(1);
-        } finally {
-            setIsAnalyzing(false);
         }
     };
 
@@ -69,7 +66,7 @@ export default function CareerGoalDefinition() {
 
             <AnimatePresence mode="wait">
                 {step === 1 && (
-                    <motion.div
+                    <div
                         key="step1"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
@@ -114,11 +111,11 @@ export default function CareerGoalDefinition() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </motion.div>
+                    </div>
                 )}
 
                 {step === 2 && (
-                    <motion.div
+                    <div
                         key="step2"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -132,11 +129,11 @@ export default function CareerGoalDefinition() {
                         </div>
                         <h3 className="text-xl font-bold text-slate-800">AI is analyzing your profile...</h3>
                         <p className="text-slate-500 mt-2">Matching your interests with 500+ career paths.</p>
-                    </motion.div>
+                    </div>
                 )}
 
                 {step === 3 && (
-                    <motion.div
+                    <div
                         key="step3"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -198,7 +195,7 @@ export default function CareerGoalDefinition() {
                         </div>
                         {/* Spacing for fixed footer */}
                         <div className="h-20"></div>
-                    </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
         </div>
