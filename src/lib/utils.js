@@ -1,6 +1,7 @@
 // Utility functions for class merging
 
 import { twMerge } from 'tailwind-merge';
+import clsx from 'clsx';
 
 /**
  * Merges Tailwind CSS class strings using `clsx` and `tailwind-merge`.
