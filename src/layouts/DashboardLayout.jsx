@@ -6,6 +6,10 @@ import { cn } from '../lib/utils';
 import CommandPalette from '../components/CommandPalette';
 import AiAssistant from '../components/AiAssistant';
 
+/**
+ * DashboardLayout wraps all authenticated user dashboard views.
+ * Provides sidebar navigation links based on user roles (student, faculty, hod, placement_cell, admin).
+ */
 export default function DashboardLayout() {
     const { user, logout, loading } = useAuth();
     const navigate = useNavigate();
