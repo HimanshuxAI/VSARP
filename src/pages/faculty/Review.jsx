@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Button } from '../../components/ui/button';
@@ -9,8 +9,8 @@ export default function FacultyReview() {
     const { activities, semesterResults, updateStatus, updateResultStatus } = useData();
     const { user } = useAuth();
 
-    // Filter only Pending
-    const pendingActivities = activities.filter(a => a.status === 'pending');
+    // Filter only Pending (memoized for stable reference)
+    const pendingActivities = useMemo(() => activities.filter(a => a.status === 'pending'), [activities]);
 
     // State
     const [selectedId, setSelectedId] = useState(null);
@@ -52,9 +52,10 @@ export default function FacultyReview() {
     // Auto-select first if none selected
     useEffect(() => {
         if (!selectedId && pendingActivities.length > 0) {
-            setSelectedId(pendingActivities[0].id);
+            // Defer state update to avoid synchronous setState in effect
+            queueMicrotask(() => setSelectedId(pendingActivities[0].id));
         }
-    }, [pendingActivities.length, selectedId]);
+    }, [pendingActivities, selectedId]);
 
     // Keyboard Shortcuts
     const handleKeyDown = useCallback((e) => {
@@ -77,14 +78,13 @@ export default function FacultyReview() {
             }
             if (e.key === 'r' || e.key === 'R') {
                 setRejectMode(true);
-                // setTimeout to focus textarea? (Optional enhancement)
             }
             if (e.key === 'Escape') {
                 setRejectMode(false);
                 setShowApproveConfirm(false);
             }
         }
-    }, [processing, selectedActivity, pendingActivities, selectedId, rejectMode]);
+    }, [processing, selectedActivity, pendingActivities, selectedId, rejectMode, setSelectedId, setShowApproveConfirm, setRejectMode]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
