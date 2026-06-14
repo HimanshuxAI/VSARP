@@ -59,6 +59,116 @@ const ActionButton = ({ onClick, icon: Icon, label, variant = "primary" }) => (
     </button>
 );
 
+// --- Resume Paper (ATS Optimized) - Extracted as static component ---
+const ResumePreview = ({ resume }) => (
+    <div className="bg-white text-black w-full h-full min-h-[1056px] shadow-2xl mx-auto p-[0.4in] sm:p-[0.5in] md:p-[0.75in] font-serif text-[10.5pt] leading-normal resume-paper text-left" id="resume-preview">
+        {/* Header */}
+        <div className="text-center border-b-2 border-black pb-2 mb-2">
+            <h1 className="text-3xl font-bold uppercase tracking-wide font-sans mb-1">{resume.personal.fullName}</h1>
+            <div className="flex flex-wrap justify-center gap-x-4 text-sm text-gray-800">
+                {resume.personal.email && <span>{resume.personal.email}</span>}
+                {resume.personal.phone && <span>{resume.personal.phone}</span>}
+                {resume.personal.linkedin && <a href={`https://${resume.personal.linkedin}`} className="hover:underline">{resume.personal.linkedin}</a>}
+                {resume.personal.github && <a href={`https://${resume.personal.github}`} className="hover:underline">{resume.personal.github}</a>}
+                {resume.personal.website && <a href={`https://${resume.personal.website}`} className="hover:underline">{resume.personal.website}</a>}
+            </div>
+        </div>
+
+        {/* Education */}
+        {resume.education.length > 0 && (
+            <div className="mb-3">
+                <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Education</h2>
+                {resume.education.map(edu => (
+                    <div key={edu.id} className="mb-2">
+                        <div className="flex justify-between font-bold">
+                            <span>{edu.school}</span>
+                            <span>{edu.location}</span>
+                        </div>
+                        <div className="flex justify-between italic">
+                            <span>{edu.degree} {edu.gpa && `- GPA: ${edu.gpa}`}</span>
+                            <span>{edu.date}</span>
+                        </div>
+                        {edu.coursework && (
+                            <div className="text-sm mt-0.5">
+                                <span className="font-semibold">Coursework:</span> {edu.coursework}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {/* Skills */}
+        <div className="mb-3">
+            <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Technical Skills</h2>
+            <div className="text-sm">
+                <div className="mb-0.5"><span className="font-bold">Languages:</span> {resume.skills.languages}</div>
+                <div className="mb-0.5"><span className="font-bold">Frameworks:</span> {resume.skills.frameworks}</div>
+                <div><span className="font-bold">Developer Tools:</span> {resume.skills.tools}</div>
+            </div>
+        </div>
+
+        {/* Experience */}
+        {resume.experience.length > 0 && (
+            <div className="mb-3">
+                <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Experience</h2>
+                {resume.experience.map(exp => (
+                    <div key={exp.id} className="mb-3">
+                        <div className="flex justify-between font-bold">
+                            <span>{exp.role}</span>
+                            <span>{exp.date}</span>
+                        </div>
+                        <div className="flex justify-between italic mb-1">
+                            <span>{exp.company}</span>
+                            <span>{exp.location}</span>
+                        </div>
+                        <ul className="list-disc ml-5 space-y-0.5">
+                            {exp.points.map((point, idx) => (
+                                <li key={idx} className="pl-1">{point}</li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {/* Projects */}
+        {resume.projects.length > 0 && (
+            <div className="mb-3">
+                <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Projects</h2>
+                {resume.projects.map(proj => (
+                    <div key={proj.id} className="mb-3">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                            <div>
+                                <span className="font-bold mr-2">{proj.name}</span>
+                                <span className="italic text-gray-700 text-sm">| {proj.tech}</span>
+                            </div>
+                            {proj.link && <span className="text-sm">{proj.date}</span>}
+                        </div>
+                        <ul className="list-disc ml-5 space-y-0.5">
+                            {proj.points.map((point, idx) => (
+                                <li key={idx} className="pl-1">{point}</li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </div>
+        )}
+
+        {/* Achievements */}
+        {resume.achievements.length > 0 && resume.achievements[0] !== "" && (
+            <div className="mb-3">
+                <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Achievements</h2>
+                <ul className="list-disc ml-5 space-y-0.5">
+                    {resume.achievements.map((ach, idx) => (
+                        ach && <li key={idx} className="pl-1">{ach}</li>
+                    ))}
+                </ul>
+            </div>
+        )}
+    </div>
+);
+
 export default function ResumeBuilder() {
     const { user } = useAuth();
     const STORAGE_KEY = `vsarp_resume_${user?.id || 'guest'}`;
@@ -109,7 +219,7 @@ export default function ResumeBuilder() {
         return initialData;
     });
 
-    const [activeTab, setActiveTab] = useState('editor');
+    const [activeTab] = useState('editor');
     const [sections, setSections] = useState({
         personal: true,
         education: false,
@@ -123,16 +233,16 @@ export default function ResumeBuilder() {
     // Sync user data if missing (e.g. first load)
     useEffect(() => {
         if (user && (!resume.personal.fullName || resume.personal.fullName === "Student Name")) {
-            setResume(prev => ({
+            queueMicrotask(() => setResume(prev => ({
                 ...prev,
                 personal: {
                     ...prev.personal,
                     fullName: user.name,
                     email: user.email
                 }
-            }));
+            })));
         }
-    }, [user]);
+    }, [user, resume.personal.fullName]);
 
     // Save to LocalStorage
     useEffect(() => {
@@ -298,117 +408,168 @@ export default function ResumeBuilder() {
         }));
     };
 
-    const handlePrint = () => window.print();
+    const handlePrint = () => {
+        const printWindow = window.open('', '_blank', 'width=850,height=1100');
+        if (!printWindow) {
+            alert('Please allow popups to download PDF');
+            return;
+        }
 
-    // --- Resume Paper (ATS Optimized) ---
-    const ResumePreview = () => (
-        <div className="bg-white text-black w-full h-full min-h-[1056px] shadow-2xl mx-auto p-[0.4in] sm:p-[0.5in] md:p-[0.75in] font-serif text-[10.5pt] leading-normal resume-paper text-left" id="resume-preview">
-            {/* Header */}
-            <div className="text-center border-b-2 border-black pb-2 mb-2">
-                <h1 className="text-3xl font-bold uppercase tracking-wide font-sans mb-1">{resume.personal.fullName}</h1>
-                <div className="flex flex-wrap justify-center gap-x-4 text-sm text-gray-800">
-                    {resume.personal.email && <span>{resume.personal.email}</span>}
-                    {resume.personal.phone && <span>{resume.personal.phone}</span>}
-                    {resume.personal.linkedin && <a href={`https://${resume.personal.linkedin}`} className="hover:underline">{resume.personal.linkedin}</a>}
-                    {resume.personal.github && <a href={`https://${resume.personal.github}`} className="hover:underline">{resume.personal.github}</a>}
-                    {resume.personal.website && <a href={`https://${resume.personal.website}`} className="hover:underline">{resume.personal.website}</a>}
+        // Build contact info line
+        const contactParts = [
+            resume.personal.email,
+            resume.personal.phone,
+            resume.personal.linkedin,
+            resume.personal.github,
+            resume.personal.website
+        ].filter(Boolean);
+
+        // Build education HTML
+        const eduHTML = resume.education.map(edu => `
+            <div style="margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;font-weight:bold">
+                    <span>${edu.school || ''}</span><span>${edu.location || ''}</span>
                 </div>
+                <div style="display:flex;justify-content:space-between;font-style:italic">
+                    <span>${edu.degree || ''}${edu.gpa ? ' - GPA: ' + edu.gpa : ''}</span><span>${edu.date || ''}</span>
+                </div>
+                ${edu.coursework ? `<div style="font-size:9.5pt;margin-top:2px"><b>Coursework:</b> ${edu.coursework}</div>` : ''}
             </div>
+        `).join('');
 
-            {/* Education */}
-            {resume.education.length > 0 && (
-                <div className="mb-3">
-                    <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Education</h2>
-                    {resume.education.map(edu => (
-                        <div key={edu.id} className="mb-2">
-                            <div className="flex justify-between font-bold">
-                                <span>{edu.school}</span>
-                                <span>{edu.location}</span>
-                            </div>
-                            <div className="flex justify-between italic">
-                                <span>{edu.degree} {edu.gpa && `- GPA: ${edu.gpa}`}</span>
-                                <span>{edu.date}</span>
-                            </div>
-                            {edu.coursework && (
-                                <div className="text-sm mt-0.5">
-                                    <span className="font-semibold">Coursework:</span> {edu.coursework}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+        // Build experience HTML
+        const expHTML = resume.experience.map(exp => `
+            <div style="margin-bottom:10px">
+                <div style="display:flex;justify-content:space-between;font-weight:bold">
+                    <span>${exp.role || ''}</span><span>${exp.date || ''}</span>
                 </div>
-            )}
-
-            {/* Skills */}
-            <div className="mb-3">
-                <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Technical Skills</h2>
-                <div className="text-sm">
-                    <div className="mb-0.5"><span className="font-bold">Languages:</span> {resume.skills.languages}</div>
-                    <div className="mb-0.5"><span className="font-bold">Frameworks:</span> {resume.skills.frameworks}</div>
-                    <div><span className="font-bold">Developer Tools:</span> {resume.skills.tools}</div>
+                <div style="display:flex;justify-content:space-between;font-style:italic;margin-bottom:4px">
+                    <span>${exp.company || ''}</span><span>${exp.location || ''}</span>
                 </div>
+                <ul>${exp.points.filter(p => p).map(p => `<li>${p}</li>`).join('')}</ul>
             </div>
+        `).join('');
 
-            {/* Experience */}
-            {resume.experience.length > 0 && (
-                <div className="mb-3">
-                    <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Experience</h2>
-                    {resume.experience.map(exp => (
-                        <div key={exp.id} className="mb-3">
-                            <div className="flex justify-between font-bold">
-                                <span>{exp.role}</span>
-                                <span>{exp.date}</span>
-                            </div>
-                            <div className="flex justify-between italic mb-1">
-                                <span>{exp.company}</span>
-                                <span>{exp.location}</span>
-                            </div>
-                            <ul className="list-disc ml-5 space-y-0.5">
-                                {exp.points.map((point, idx) => (
-                                    <li key={idx} className="pl-1">{point}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
+        // Build projects HTML
+        const projHTML = resume.projects.map(proj => `
+            <div style="margin-bottom:10px">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px">
+                    <div><b>${proj.name || ''}</b> <span style="font-style:italic;color:#444;font-size:9.5pt">${proj.tech ? '| ' + proj.tech : ''}</span></div>
+                    <span style="font-size:9.5pt">${proj.date || ''}</span>
                 </div>
-            )}
+                <ul>${proj.points.filter(p => p).map(p => `<li>${p}</li>`).join('')}</ul>
+            </div>
+        `).join('');
 
-            {/* Projects */}
-            {resume.projects.length > 0 && (
-                <div className="mb-3">
-                    <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Projects</h2>
-                    {resume.projects.map(proj => (
-                        <div key={proj.id} className="mb-3">
-                            <div className="flex justify-between items-baseline mb-0.5">
-                                <div>
-                                    <span className="font-bold mr-2">{proj.name}</span>
-                                    <span className="italic text-gray-700 text-sm">| {proj.tech}</span>
-                                </div>
-                                {proj.link && <span className="text-sm">{proj.date}</span>}
-                            </div>
-                            <ul className="list-disc ml-5 space-y-0.5">
-                                {proj.points.map((point, idx) => (
-                                    <li key={idx} className="pl-1">{point}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
-                </div>
-            )}
+        // Build achievements HTML
+        const achHTML = resume.achievements.filter(a => a).map(a => `<li>${a}</li>`).join('');
 
-            {/* Achievements */}
-            {resume.achievements.length > 0 && resume.achievements[0] !== "" && (
-                <div className="mb-3">
-                    <h2 className="font-sans font-bold text-lg uppercase border-b border-black mb-1.5">Achievements</h2>
-                    <ul className="list-disc ml-5 space-y-0.5">
-                        {resume.achievements.map((ach, idx) => (
-                            ach && <li key={idx} className="pl-1">{ach}</li>
-                        ))}
-                    </ul>
-                </div>
-            )}
+        printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+    <title>${resume.personal.fullName || 'Resume'} - VSARP</title>
+    <style>
+        @page { margin: 0; size: letter; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Times New Roman', Georgia, serif;
+            color: #000;
+            background: #fff;
+            font-size: 10.5pt;
+            line-height: 1.35;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            padding: 0.45in 0.55in;
+        }
+        .page { max-width: 7.5in; margin: 0 auto; }
+        h1 {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 22pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .contact {
+            text-align: center;
+            font-size: 9.5pt;
+            color: #333;
+            margin-bottom: 2px;
+        }
+        .divider { border-bottom: 2px solid #000; margin-bottom: 8px; padding-bottom: 6px; }
+        .section { margin-bottom: 8px; }
+        .section-title {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1px solid #000;
+            margin-bottom: 5px;
+            padding-bottom: 1px;
+        }
+        ul { margin-left: 18px; list-style-type: disc; }
+        li { padding-left: 2px; margin-bottom: 1px; font-size: 10pt; }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="divider">
+            <h1>${resume.personal.fullName || ''}</h1>
+            <div class="contact">${contactParts.join('  &nbsp;|&nbsp;  ')}</div>
         </div>
-    );
+
+        ${resume.education.length > 0 ? `
+        <div class="section">
+            <div class="section-title">Education</div>
+            ${eduHTML}
+        </div>` : ''}
+
+        ${(resume.skills.languages || resume.skills.frameworks || resume.skills.tools) ? `
+        <div class="section">
+            <div class="section-title">Technical Skills</div>
+            <div style="font-size:10pt">
+                ${resume.skills.languages ? `<div style="margin-bottom:2px"><b>Languages:</b> ${resume.skills.languages}</div>` : ''}
+                ${resume.skills.frameworks ? `<div style="margin-bottom:2px"><b>Frameworks:</b> ${resume.skills.frameworks}</div>` : ''}
+                ${resume.skills.tools ? `<div><b>Developer Tools:</b> ${resume.skills.tools}</div>` : ''}
+            </div>
+        </div>` : ''}
+
+        ${resume.experience.length > 0 ? `
+        <div class="section">
+            <div class="section-title">Experience</div>
+            ${expHTML}
+        </div>` : ''}
+
+        ${resume.projects.length > 0 ? `
+        <div class="section">
+            <div class="section-title">Projects</div>
+            ${projHTML}
+        </div>` : ''}
+
+        ${achHTML ? `
+        <div class="section">
+            <div class="section-title">Achievements</div>
+            <ul>${achHTML}</ul>
+        </div>` : ''}
+    </div>
+</body>
+</html>`);
+        printWindow.document.close();
+
+        // Wait for content to render then trigger print
+        printWindow.onload = () => {
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.onafterprint = () => printWindow.close();
+            }, 250);
+        };
+        // Fallback
+        setTimeout(() => {
+            try { printWindow.print(); } catch(e) { /* already printed */ }
+        }, 800);
+    };
+
 
 
     return (
@@ -417,7 +578,7 @@ export default function ResumeBuilder() {
         @media print {
           @page {
             margin: 0;
-            size: auto;
+            size: letter portrait;
           }
 
           /* HIDE EVERYTHING NOT NEEDED */
@@ -437,6 +598,7 @@ export default function ResumeBuilder() {
             background: white !important;
             color: black !important;
             height: auto !important;
+            min-height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
             overflow: visible !important;
@@ -445,7 +607,7 @@ export default function ResumeBuilder() {
 
           /* SHOW PREVIEW PANEL CONTAINER */
           #preview-panel {
-             display: block !important; /* Force show even if hidden in mobile tab */
+             display: block !important;
              background: white !important;
              width: 100% !important;
              height: auto !important;
@@ -466,14 +628,20 @@ export default function ResumeBuilder() {
             padding: 0 !important;
             left: 0 !important;
             top: 0 !important;
+            height: auto !important;
+            min-height: auto !important;
           }
 
           /* TARGET RESUME CONTENT */
           #resume-preview {
             width: 100% !important;
+            max-width: 8.5in !important;
+            height: auto !important;
+            min-height: auto !important;
             padding: 0.5in !important; /* Standard Print Margin */
-            margin: 0 !important;
+            margin: 0 auto !important;
             box-shadow: none !important;
+            border: none !important;
           }
 
           /* Force Text Colors */
@@ -503,8 +671,8 @@ export default function ResumeBuilder() {
 
                 {/* Mobile Tabs */}
                 <div className="flex lg:hidden bg-zinc-900 rounded-lg p-1 border border-zinc-800">
-                    <button onClick={() => setActiveTab('editor')} className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all \${activeTab === 'editor' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500'}`}>Editor</button>
-                    <button onClick={() => setActiveTab('preview')} className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all \${activeTab === 'preview' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500'}`}>Preview</button>
+                    <button onClick={() => {}} className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${activeTab === 'editor' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500'}`}>Editor</button>
+                    <button onClick={() => {}} className={`px-4 py-1.5 text-xs font-medium rounded-md transition-all ${activeTab === 'preview' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500'}`}>Preview</button>
                 </div>
 
                 <div className="hidden sm:flex items-center gap-3">
@@ -524,7 +692,7 @@ export default function ResumeBuilder() {
             <main className="flex-1 flex gap-0 lg:gap-0 overflow-hidden relative">
 
                 {/* LEFT: Editor Panel */}
-                <div id="editor-panel" className={`flex-1 flex-col h-full overflow-hidden bg-zinc-950 border-r border-white/5 \${activeTab === 'preview' ? 'hidden lg:flex' : 'flex'}`}>
+                <div id="editor-panel" className={`flex-1 flex-col h-full overflow-hidden bg-zinc-950 border-r border-white/5 ${activeTab === 'preview' ? 'hidden lg:flex' : 'flex'}`}>
                     <div className="flex-none p-3 px-6 flex items-center gap-2 text-zinc-500 border-b border-white/5 bg-zinc-950/50 backdrop-blur-sm z-10 sticky top-0">
                         <Sparkles size={14} className="text-purple-400" />
                         <span className="text-xs uppercase tracking-widest font-bold text-zinc-400">Editor Details</span>
@@ -555,7 +723,7 @@ export default function ResumeBuilder() {
                             </div>
                             {sections.education && (
                                 <div className="flex flex-col gap-8 px-1 py-4 animate-in slide-in-from-top-1 fade-in duration-200">
-                                    {resume.education.map((edu, index) => (
+                                    {resume.education.map((edu) => (
                                         <div key={edu.id} className="relative pl-4 border-l border-zinc-800 hover:border-zinc-600 transition-colors">
                                             <button onClick={() => removeItem('education', edu.id)} className="absolute right-0 top-0 text-zinc-700 hover:text-red-400 p-1 transition-colors"><Trash2 size={14} /></button>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-6">
@@ -592,7 +760,7 @@ export default function ResumeBuilder() {
                             </div>
                             {sections.experience && (
                                 <div className="flex flex-col gap-10 px-1 py-4 animate-in slide-in-from-top-1 fade-in duration-200">
-                                    {resume.experience.map((exp, index) => (
+                                    {resume.experience.map((exp) => (
                                         <div key={exp.id} className="relative pl-4 border-l border-zinc-800 hover:border-zinc-600 transition-colors">
                                             <button onClick={() => removeItem('experience', exp.id)} className="absolute right-0 top-0 text-zinc-700 hover:text-red-400 p-1 transition-colors"><Trash2 size={14} /></button>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-6 mb-4">
@@ -634,7 +802,7 @@ export default function ResumeBuilder() {
                             </div>
                             {sections.projects && (
                                 <div className="flex flex-col gap-10 px-1 py-4 animate-in slide-in-from-top-1 fade-in duration-200">
-                                    {resume.projects.map((proj, index) => (
+                                    {resume.projects.map((proj) => (
                                         <div key={proj.id} className="relative pl-4 border-l border-zinc-800 hover:border-zinc-600 transition-colors">
                                             <button onClick={() => removeItem('projects', proj.id)} className="absolute right-0 top-0 text-zinc-700 hover:text-red-400 p-1 transition-colors"><Trash2 size={14} /></button>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pr-6 mb-4">
@@ -702,7 +870,7 @@ export default function ResumeBuilder() {
                 </div>
 
                 {/* RIGHT: Resume Preview */}
-                <div id="preview-panel" className={`flex-1 flex-col items-center justify-center relative bg-zinc-900 \${activeTab === 'editor' ? 'hidden lg:flex' : 'flex'}`}>
+                <div id="preview-panel" className={`flex-1 flex-col items-center justify-center relative bg-zinc-900 ${activeTab === 'editor' ? 'hidden lg:flex' : 'flex'}`}>
                     <div className="flex-none w-full p-4 flex items-center justify-center gap-2 text-zinc-500 border-b border-white/5 bg-zinc-900/50 backdrop-blur-sm absolute top-0 z-10">
                         <FileText size={14} className="text-zinc-500" />
                         <span className="text-xs uppercase tracking-widest font-bold">Live Preview</span>
@@ -720,7 +888,7 @@ export default function ResumeBuilder() {
 
                         {/* WRAPPER WITH ID FOR CSS TARGETING */}
                         <div id="resume-preview-wrapper" className="w-[8.5in] z-10 transform scale-[0.6] sm:scale-[0.7] md:scale-[0.8] xl:scale-[0.9] transition-transform duration-300 bg-white shadow-2xl">
-                            <ResumePreview />
+                            <ResumePreview resume={resume} />
                         </div>
                     </div>
                 </div>
