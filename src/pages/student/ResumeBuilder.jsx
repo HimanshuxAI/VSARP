@@ -676,15 +676,15 @@ export default function ResumeBuilder() {
                 </div>
 
                 <div className="hidden sm:flex items-center gap-3">
-                    <button onClick={handleAutoFill} className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white/5" title="Auto-fill from Profile">
+                    <button onClick={handleAutoFill} aria-label="Auto-fill personal details" className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white/5" title="Auto-fill from Profile">
                         <User size={14} /> Auto-fill
                     </button>
-                    <button onClick={handleRandomFill} className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white/5" title="Random Data Fill">
+                    <button onClick={handleRandomFill} aria-label="Fill with random sample data" className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full hover:bg-white/5" title="Random Data Fill">
                         <Shuffle size={14} /> Random
                     </button>
-                    <button onClick={handleReset} className="text-zinc-500 hover:text-white transition-colors" title="Reset"><RotateCcw size={16} /></button>
+                    <button onClick={handleReset} aria-label="Reset resume to default template" className="text-zinc-500 hover:text-white transition-colors" title="Reset"><RotateCcw size={16} /></button>
                     <div className="h-4 w-px bg-zinc-800 mx-1"></div>
-                    <ActionButton onClick={handlePrint} icon={Download} label="Download PDF" variant="primary" />
+                    <ActionButton onClick={handlePrint} aria-label="Download resume as PDF" icon={Download} label="Download PDF" variant="primary" />
                 </div>
             </nav>
 
