@@ -13,6 +13,16 @@ export default function FacultyMonitoring() {
 
     // Faculty stats
     const facultyStats = useMemo(() => {
+        // Deterministic pseudo-random based on string hash (pure, no Math.random)
+        const hashCode = (str) => {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        };
+
         return deptFaculty.map(f => {
             const papers = researchPapers.filter(p => p.faculty_id === f.id);
             const reviewedActs = activities.filter(a => a.approved_by === f.full_name || a.approved_by === f.name);
@@ -24,7 +34,7 @@ export default function FacultyMonitoring() {
                 paperCount: papers.length,
                 reviewedCount: reviewedActs.length,
                 fdpParticipation: fdpCount,
-                mentorshipCount: Math.floor(Math.random() * 10) + 1 // Mock mentorship
+                mentorshipCount: (hashCode(f.id || f.email || '') % 10) + 1 // Deterministic mock mentorship
             };
         });
     }, [deptFaculty, researchPapers, activities]);
