@@ -66,6 +66,7 @@ export default async function handler(req, res) {
         return;
     }
 
+    // Keep the NVIDIA credential server-side; the browser only talks to this route.
     const apiKey = env.NVIDIA_API_KEY;
     if (!apiKey) {
         res.status(503).json({ error: 'NVIDIA_API_KEY is not configured' });
