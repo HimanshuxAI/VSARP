@@ -70,7 +70,7 @@ test('student aptitude analytics return empty-state values when no attempts exis
     assert.equal(analytics.percentile, null);
 });
 
-test('NVIDIA assistant payload uses Gemma with VSARP context and non-streaming JSON', () => {
+test('NVIDIA assistant payload uses Llama with VSARP context and non-streaming JSON', () => {
     const payload = buildNvidiaPayload({
         message: 'Explain employability score',
         pathname: '/student/dashboard',
@@ -80,7 +80,7 @@ test('NVIDIA assistant payload uses Gemma with VSARP context and non-streaming J
         ],
     });
 
-    assert.equal(payload.model, 'google/gemma-3n-e2b-it');
+    assert.equal(payload.model, 'meta/llama-3.1-8b-instruct');
     assert.equal(payload.stream, false);
     assert.equal(payload.temperature, 0.2);
     assert.equal(payload.top_p, 0.7);

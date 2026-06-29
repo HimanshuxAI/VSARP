@@ -3,16 +3,6 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  envPrefix: ['VITE_', 'NEXT_PUBLIC_', 'NVIDIA_'],
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   plugins: [react()],
-  server: {
-    proxy: {
-      '/nvidia-api': {
-        target: 'https://integrate.api.nvidia.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/nvidia-api/, ''),
-        secure: true,
-      }
-    }
-  }
 })

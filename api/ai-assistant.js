@@ -1,7 +1,7 @@
 import { env } from 'node:process';
 
 const NVIDIA_CHAT_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const DEFAULT_MODEL = 'google/gemma-3n-e2b-it';
+const DEFAULT_MODEL = 'meta/llama-3.1-8b-instruct';
 
 function sanitizeMessage(value, maxLength = 2000) {
     return String(value || '').trim().slice(0, maxLength);
