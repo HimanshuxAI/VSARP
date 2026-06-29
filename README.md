@@ -61,8 +61,9 @@ VSARP (Virtual Student Academic Resource Portal) is a comprehensive AI‑powered
 ### Supabase Setup
 1. Copy `.env.example` to `.env.local`.
 2. Add your Supabase project URL and public anon key.
-3. Optionally add `NVIDIA_API_KEY` for the AI assistant route.
-4. Run the SQL file at `supabase/schema.sql` in the Supabase SQL editor.
+3. Add `NVIDIA_API_KEY` to `.env.local` for the AI assistant route.
+4. The assistant posts to `/api/ai-assistant`, which keeps the NVIDIA key on the server side.
+5. Run the SQL file at `supabase/schema.sql` in the Supabase SQL editor.
 
 If no environment variables are present, the app falls back to browser `localStorage` for quick demos. Mock mode auto‑seeds ten Computer Science students with approved activities and aptitude attempts.
 
